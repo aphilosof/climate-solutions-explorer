@@ -1,0 +1,38 @@
+{
+  "name": "metabat_bins",
+  "size": 418360973,
+  "children": [
+    {
+      "name": "bin_1",
+      "size": 52717,
+      "tax": "k__Bacteria (UID203)",
+      "completeness": 33.23,
+      "children": [
+        {
+          "name": "36d412bb813a6adbb9a76ba90f6e329d",
+          "children": [
+            {
+              "tax": "microbial",
+              "size": 8686
+            }
+          ]
+        },
+        {
+          "name": "f7c3f622e0c6112b9576d62c20fb9001",
+          "children": [
+            {
+              "tax": "microbial",
+              "size": 8619
+            }
+          ]
+        },
+        {
+          "name": "ba04629ea6fe223123c6fe04ba65b2f6",
+          "children": [
+            {
+              "tax": "microbial",
+              "size": 7504
+            }
+          ]
+        }
+}

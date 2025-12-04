@@ -116,8 +116,8 @@ git push origin main
 - `index.html`, `styles.css`
 - `js/` folder (all visualization modules)
 - `docs/` folder (FAQ)
+- `db/` folder (data files)
 - `cd_logo_crop_green.png`
-- `CD_Solution_map_2_DB_prototype_V5.json`
 - `LICENSE`, `README.md`
 
 **Development files** (stay private):

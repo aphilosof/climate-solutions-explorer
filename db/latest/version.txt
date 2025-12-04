@@ -1,0 +1,6 @@
+### main.js script always reads:
+### CD_Solution_map_2_contetnt
+####
+#### Recored version here
+Version date    path_do_dir  content_json_file_name_plus_path content_tsv_file_name_plus_path taxonomy_file_name_path
+V7  11/17/2025  /db/varsions/CD_solutionmap_db_V7/  CD_Solution_map_2_DB_prototype_V7.json CD_Solution_map_2_0_DB_prototype_-_V7_-_Main_Content_TAGGED.tsv CD_Solution_map_2.0_DB_prototype-V7-Taxonomy_Reference.tsv

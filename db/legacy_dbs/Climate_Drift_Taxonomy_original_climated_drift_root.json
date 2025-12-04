@@ -1,0 +1,1089 @@
+{
+  "name": "Climate Drift",
+  "children": [
+    {
+      "name": "Climate Solutions",
+      "children": [
+        {
+          "name": "Power",
+          "children": [
+            {
+              "name": "Renewables",
+              "children": [
+                {
+                  "name": "Software",
+                  "children": [
+                    {"name": "Asset Management"},
+                    {"name": "Predictive Analytics"},
+                    {"name": "Planning and Design"}
+                  ]
+                },
+                {
+                  "name": "Solar",
+                  "children": [
+                    {
+                      "name": "Production and Deployment",
+                      "children": [
+                        {"name": "Solar Supply Chain"},
+                        {"name": "Lack of Solar Installers"},
+                        {"name": "Residential Solar"},
+                        {"name": "Commercial Solar"},
+                        {"name": "Utility Scale Solar"},
+                        {"name": "Solar Financing"}
+                      ]
+                    },
+                    {
+                      "name": "Software for Solar",
+                      "children": [
+                        {"name": "SCADA"},
+                        {"name": "Yield Optimization"},
+                        {"name": "Asset Performance Management"}
+                      ]
+                    },
+                    {
+                      "name": "Technological Improvements",
+                      "children": [
+                        {
+                          "name": "Advanced Panels",
+                          "children": [
+                            {"name": "Perovskite"},
+                            {"name": "Other new combinations"}
+                          ]
+                        },
+                        {"name": "Advanced Trackers"},
+                        {"name": "New Structures Concentrated Solar"},
+                        {"name": "Floating Solar"},
+                        {"name": "Building Integrated Photovoltaics (BIPV)"}
+                      ]
+                    },
+                    {
+                      "name": "Maintenance",
+                      "children": [
+                        {"name": "Inspections"},
+                        {"name": "Vegetation"},
+                        {"name": "Panel Cleaning"},
+                        {"name": "Recycling"}
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Wind",
+                  "children": [
+                    {
+                      "name": "Production and Deployment",
+                      "children": [
+                        {"name": "Wind Supply Chain"},
+                        {"name": "Lack of Wind Installers"},
+                        {"name": "Regulation"}
+                      ]
+                    },
+                    {
+                      "name": "Onshore Wind"
+                    },
+                    {
+                      "name": "Offshore Wind",
+                      "children": [
+                        {"name": "Fixed Support"},
+                        {"name": "Floating"}
+                      ]
+                    },
+                    {
+                      "name": "Improvements",
+                      "children": [
+                        {"name": "Turbine Attachements"},
+                        {"name": "Taller Wind Towers"},
+                        {
+                          "name": "New Turbine Design",
+                          "children": [
+                            {"name": "Vertical-axis wind turbine (VAWT)"}
+                          ]
+                        },
+                        {"name": "Blade Recycling"}
+                      ]
+                    },
+                    {
+                      "name": "Sensors",
+                      "children": [
+                        {"name": "Hub"},
+                        {"name": "Blade"},
+                        {"name": "Windspeed"}
+                      ]
+                    },
+                    {
+                      "name": "Software",
+                      "children": [
+                        {"name": "Yield Optimization"}
+                      ]
+                    },
+                    {
+                      "name": "Maintenance",
+                      "children": [
+                        {"name": "Inspections"},
+                        {"name": "Blade Maintenance"}
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Hydropower",
+                  "children": [
+                    {"name": "Modernising old plants"},
+                    {
+                      "name": "Generation",
+                      "children": [
+                        {"name": "Conventional"},
+                        {"name": "Pumped Storage"},
+                        {"name": "Run-of-river"},
+                        {"name": "Tide"},
+                        {"name": "In-pipe"}
+                      ]
+                    },
+                    {
+                      "name": "Drought Management & Planning"
+                    },
+                    {
+                      "name": "Environmental Impact",
+                      "children": [
+                        {"name": "Assessment"},
+                        {"name": "Mitigation"}
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Biomass & Waste-To-Energy (WTE)",
+                  "children": [
+                    {"name": "Carbon Capture & Storage"},
+                    {"name": "Waste Management"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Nuclear",
+              "children": [
+                {"name": "Fission"},
+                {"name": "Fusion"}
+              ]
+            },
+            {
+              "name": "Fossil Fuels",
+              "children": [
+                {
+                  "name": "Coal",
+                  "children": [
+                    {"name": "Carbon Capture & Storage"},
+                    {"name": "Repurposing of Mines"}
+                  ]
+                },
+                {
+                  "name": "Gas",
+                  "children": [
+                    {"name": "Improvements"},
+                    {"name": "Carbon Capture & Storage"},
+                    {"name": "Flaring emissions"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Energy Storage",
+              "children": [
+                {
+                  "name": "Daily peak shaving & ancillary services (4-6h of storage)",
+                  "children": [
+                    {"name": "Lithium-ion Batteries"}
+                  ]
+                },
+                {
+                  "name": "Daily net load balancing (8-16h of storage)",
+                  "children": [
+                    {"name": "Flow Batteries"},
+                    {"name": "Gravity-based Batteries"},
+                    {"name": "Zinc-based Batteries"},
+                    {"name": "High-temperature Heat"},
+                    {"name": "Compressed Fluids"},
+                    {"name": "Compressed Air"}
+                  ]
+                },
+                {
+                  "name": "Firm multi-day & seasonal capacity (100+h of storage)",
+                  "children": [
+                    {"name": "Iron Air Batteries"},
+                    {"name": "Hydrogen"}
+                  ]
+                },
+                {
+                  "name": "Software",
+                  "children": [
+                    {"name": "Analytics"},
+                    {"name": "Optimization"},
+                    {"name": "Systems"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Transmission and distribution",
+              "children": [
+                {"name": "Building new transmission"},
+                {
+                  "name": "Technologies",
+                  "children": [
+                    {"name": "Transformers"},
+                    {"name": "Superconducting cables"},
+                    {
+                      "name": "Power flow controllers",
+                      "children": [
+                        {"name": "Advanced Power Flow Control"},
+                        {"name": "Dynamic Line Ratings"},
+                        {"name": "Topology Optimization"}
+                      ]
+                    },
+                    {
+                      "name": "Maintenance",
+                      "children": [
+                        {"name": "Inspection"}
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "The Grid & Demand",
+              "children": [
+                {"name": "Smart Grids"},
+                {"name": "Smart meter"},
+                {"name": "Demand response & control"},
+                {"name": "Microgrid"},
+                {"name": "Rising Complexity of the Grid & Renewables"},
+                {"name": "Virtual Power Plants & Distributed Energy Resource (DER)"},
+                {"name": "Auto feeder switches"},
+                {"name": "Phasor measurement unit (PMUs)"},
+                {
+                  "name": "Maintenance",
+                  "children": [
+                    {"name": "Fault and outage detection"},
+                    {"name": "Technical services"}
+                  ]
+                },
+                {
+                  "name": "Software",
+                  "children": [
+                    {"name": "Workforce Management"},
+                    {"name": "Asset Management"},
+                    {"name": "Analytics"},
+                    {"name": "Cybersecurity"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Batteries",
+              "children": [
+                {
+                  "name": "Manufacturing",
+                  "children": [
+                    {"name": "Supply Chain"},
+                    {"name": "Gigafactories"}
+                  ]
+                },
+                {"name": "Portable Use"},
+                {"name": "Industrial Use"}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Protect Nature",
+          "children": [
+            {
+              "name": "Goals",
+              "children": [
+                {"name": "30 by 30"},
+                {"name": "50 by 50"}
+              ]
+            },
+            {
+              "name": "Nature Zones",
+              "children": [
+                {"name": "Forests"},
+                {"name": "Oceans"},
+                {"name": "Lands"}
+              ]
+            },
+            {"name": "Offsets"}
+          ]
+        },
+        {
+          "name": "Transportation",
+          "children": [
+            {
+              "name": "2 Wheelers & Micro Mobility",
+              "children": [
+                {"name": "eScooters"},
+                {"name": "eBikes"},
+                {"name": "eCargo Bikes"}
+              ]
+            },
+            {"name": "3 Wheelers"},
+            {
+              "name": "Cars",
+              "children": [
+                {
+                  "name": "EVs",
+                  "children": [
+                    {"name": "Production"},
+                    {
+                      "name": "Charging",
+                      "children": [
+                        {"name": "Public Charging Network"},
+                        {"name": "Home charging"}
+                      ]
+                    },
+                    {"name": "Autonomy"},
+                    {"name": "Battery Improvements"}
+                  ]
+                },
+                {"name": "Hydrogen"},
+                {"name": "Natural Gas"}
+              ]
+            },
+            {
+              "name": "Fleet electrification",
+              "children": [
+                {"name": "Fleet electrification-as-a-service"},
+                {"name": "Charging for corporate fleets"},
+                {"name": "Driver-focused services"},
+                {"name": "Logistics & optimisation"},
+                {"name": "Fleet management & telematics"},
+                {"name": "Last-mile delivery electrification"},
+                {"name": "Mobility-as-a-service for corporates"}
+              ]
+            },
+            {
+              "name": "Buses",
+              "children": [
+                {
+                  "name": "Electric Buses",
+                  "children": [
+                    {"name": "Production"},
+                    {"name": "Charging"},
+                    {"name": "Autonomy"},
+                    {"name": "Battery Improvements"},
+                    {"name": "Electrify school buses"}
+                  ]
+                },
+                {"name": "Hydrogen"},
+                {"name": "Natural Gas"}
+              ]
+            },
+            {
+              "name": "Trucks",
+              "children": [
+                {
+                  "name": "Electric Trucks",
+                  "children": [
+                    {
+                      "name": "Delivery Trucks",
+                      "children": [
+                        {"name": "Light & Medium"},
+                        {"name": "Heavy"}
+                      ]
+                    },
+                    {"name": "eRV"}
+                  ]
+                },
+                {"name": "Hydrogen Trucks"},
+                {"name": "Hybrid Trucks"},
+                {"name": "Carbon Capture"},
+                {
+                  "name": "Power train & Drive train retrofit",
+                  "children": [
+                    {"name": "Electric"},
+                    {"name": "Hydrogen"}
+                  ]
+                },
+                {"name": "Truck stops"}
+              ]
+            },
+            {
+              "name": "Rail",
+              "children": [
+                {"name": "Electric Rail"},
+                {"name": "Hydrogen Rail"},
+                {"name": "Autonomy"}
+              ]
+            },
+            {
+              "name": "Maritime",
+              "children": [
+                {"name": "Electric Ships"},
+                {
+                  "name": "Improvements & Energy Efficiency",
+                  "children": [
+                    {"name": "Sails"},
+                    {"name": "Operational Measures"}
+                  ]
+                },
+                {"name": "Autonomy"},
+                {"name": "Carbon Capture & Storage"},
+                {
+                  "name": "Alternative Fuels",
+                  "children": [
+                    {"name": "LNG"},
+                    {"name": "Hydrogen"},
+                    {"name": "Ammonia"}
+                  ]
+                },
+                {
+                  "name": "Ports",
+                  "children": [
+                    {"name": "Portside fueling"},
+                    {"name": "Loading & Port Operations"},
+                    {"name": "Carbon Management Software"},
+                    {"name": "Autonomous Unmanned Vehicles"}
+                  ]
+                },
+                {"name": "Recreational boats"}
+              ]
+            },
+            {
+              "name": "Planes",
+              "children": [
+                {"name": "eFuels"},
+                {"name": "Hydrogen"},
+                {"name": "Electric Planes"},
+                {
+                  "name": "Airports",
+                  "children": [
+                    {"name": "Fueling"},
+                    {"name": "Gate electrification"},
+                    {"name": "Rental Cars"}
+                  ]
+                },
+                {"name": "Efficiency improvements"}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Water",
+          "children": [
+            {"name": "Conservation"},
+            {"name": "Monitoring & Efficiency"},
+            {"name": "Wastewater"},
+            {"name": "Irrigation"},
+            {"name": "Purification"},
+            {
+              "name": "Extraction",
+              "children": [
+                {"name": "Desalination"},
+                {"name": "Rainwater"},
+                {"name": "Atmospheric Extraction"}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Food and Agriculture",
+          "children": [
+            {
+              "name": "Farms",
+              "children": [
+                {
+                  "name": "Farm Soils",
+                  "children": [
+                    {"name": "Soil carbon measurement"},
+                    {"name": "Farm monitoring"},
+                    {"name": "Soil improvements"},
+                    {"name": "Fertilizers"}
+                  ]
+                },
+                {"name": "Sustainable agriculture"},
+                {"name": "Regenerative farming"},
+                {"name": "Vertical farming"},
+                {"name": "Indoor farming"},
+                {"name": "Hydroponics"},
+                {"name": "Animal & Livestock Farms"}
+              ]
+            },
+            {
+              "name": "Farm Carbon Capture",
+              "children": [
+                {"name": "Cattle feed additives"},
+                {"name": "Manure digestion"},
+                {"name": "Biogas capture"}
+              ]
+            },
+            {
+              "name": "Alternative protein & dairy",
+              "children": [
+                {
+                  "name": "Plant based",
+                  "children": [
+                    {"name": "Meat"},
+                    {"name": "Dairy"},
+                    {"name": "Eggs"}
+                  ]
+                },
+                {
+                  "name": "Cultivated Meats",
+                  "children": [
+                    {"name": "Whole cuts"},
+                    {"name": "Cell mass"}
+                  ]
+                },
+                {
+                  "name": "Supporting Tech",
+                  "children": [
+                    {"name": "3D Printing"},
+                    {"name": "Scaffolding"},
+                    {"name": "Growth Media"},
+                    {"name": "Bioreactors"}
+                  ]
+                },
+                {
+                  "name": "Fermentation",
+                  "children": [
+                    {
+                      "name": "Biomass Mycoprotein"
+                    },
+                    {
+                      "name": "Precision Fermentation",
+                      "children": [
+                        {"name": "Dairy"},
+                        {"name": "Eggs"},
+                        {"name": "Other Ingredients"}
+                      ]
+                    }
+                  ]
+                },
+                {"name": "Air Protein"},
+                {"name": "Molecular Farming"},
+                {"name": "Insect Proetein"},
+                {"name": "Regenerative aquaculture"}
+              ]
+            },
+            {
+              "name": "Mushrooms",
+              "children": [
+                {"name": "Macro Farms"},
+                {"name": "Micro Farms"},
+                {"name": "D2C"}
+              ]
+            },
+            {"name": "Subsidies"},
+            {
+              "name": "Crop production",
+              "children": [
+                {"name": "Crop sensors"},
+                {"name": "Automated farm equipment"},
+                {
+                  "name": "New climate crop",
+                  "children": [
+                    {"name": "Rice"},
+                    {"name": "Wheat"}
+                  ]
+                }
+              ]
+            },
+            {"name": "Shift to Climatarian Diet"},
+            {
+              "name": "Food Waste",
+              "children": [
+                {"name": "Residential"},
+                {"name": "Commercial"},
+                {"name": "Analytics"},
+                {
+                  "name": "Surplus Management",
+                  "children": [
+                    {"name": "Overordering"}
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Circular Economy",
+          "children": [
+            {
+              "name": "Rethink",
+              "children": [
+                {"name": "Material Management Platform"},
+                {
+                  "name": "New Materials",
+                  "children": [
+                    {"name": "Plastic Alternatives"},
+                    {"name": "Low-carbon & Carbon negative materials"},
+                    {"name": "Waste as Input"}
+                  ]
+                },
+                {"name": "Logistics & Reverse Logistics"}
+              ]
+            },
+            {
+              "name": "Recycle",
+              "children": [
+                {
+                  "name": "Recycling",
+                  "children": [
+                    {"name": "Consumer Facing Recycling"},
+                    {"name": "Battery recycling"},
+                    {"name": "Plastics recycling"},
+                    {"name": "Recycling other materials"}
+                  ]
+                },
+                {
+                  "name": "Waste Management",
+                  "children": [
+                    {"name": "Route optimization Transportation"},
+                    {
+                      "name": "Advanced recycling tech",
+                      "children": [
+                        {"name": "Item detection"},
+                        {"name": "Hazard detection"},
+                        {"name": "Sorting robots"}
+                      ]
+                    },
+                    {"name": "Waste traceability & analytics"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Reduce",
+              "children": [
+                {
+                  "name": "Consumer Facing",
+                  "children": [
+                    {"name": "Repair"},
+                    {"name": "Rental"},
+                    {"name": "Second Hand"}
+                  ]
+                },
+                {"name": "Packaging"}
+              ]
+            },
+            {
+              "name": "Re-use",
+              "children": [
+                {"name": "New Sustainable Packaging"},
+                {"name": "Return"},
+                {"name": "Food waste prevention & recovery"}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Industry",
+          "children": [
+            {
+              "name": "Minerals",
+              "children": [
+                {
+                  "name": "Mining",
+                  "children": [
+                    {"name": "Automation"},
+                    {"name": "Hauling"},
+                    {"name": "Transport"},
+                    {"name": "Equipment upgrades & replacement"},
+                    {"name": "Sea-based Mining"}
+                  ]
+                },
+                {
+                  "name": "Battery Metals",
+                  "children": [
+                    {"name": "Cobalt"},
+                    {"name": "Nickel"},
+                    {"name": "Direct Lithium Extraction"},
+                    {"name": "Synthetic graphite"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Materials",
+              "children": [
+                {
+                  "name": "Building Materials",
+                  "children": [
+                    {"name": "Concrete"},
+                    {"name": "Sustainable bricks"},
+                    {"name": "Clean Steel"},
+                    {"name": "Aluminium"}
+                  ]
+                },
+                {
+                  "name": "Packaging",
+                  "children": [
+                    {"name": "Paper / Pulp"},
+                    {"name": "Carbon black"},
+                    {"name": "Plastics"}
+                  ]
+                }
+              ]
+            },
+            {"name": "Other Industries"},
+            {
+              "name": "Software",
+              "children": [
+                {"name": "Emissions"},
+                {"name": "Material Discovery"},
+                {"name": "Energy & Heat"},
+                {"name": "Waste & Recycling"}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Fuels & Chemicals",
+          "children": [
+            {
+              "name": "Hydrogen",
+              "children": [
+                {
+                  "name": "Production",
+                  "children": [
+                    {"name": "Software"},
+                    {
+                      "name": "Electrolysis",
+                      "children": [
+                        {"name": "Alkaline"},
+                        {"name": "SOEC"},
+                        {"name": "PEM"}
+                      ]
+                    },
+                    {"name": "Blue Hydrogen"},
+                    {"name": "Pyrolysis"},
+                    {"name": "Onsite SMR + CCS"},
+                    {
+                      "name": "Waste & biomethane to Hydrogen",
+                      "children": [
+                        {"name": "Plasma-based"},
+                        {"name": "Gasification"}
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Transportation",
+                  "children": [
+                    {"name": "Gas compression"},
+                    {"name": "Gas phase trucking"},
+                    {"name": "Pipeline"},
+                    {
+                      "name": "Liquid trucking",
+                      "children": [
+                        {"name": "Liquification"}
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Storage",
+                  "children": [
+                    {"name": "Chemical Storage"},
+                    {"name": "Solid State"},
+                    {"name": "Compressed Gas Tank"},
+                    {"name": "Liquid"},
+                    {"name": "Salt Cavern"}
+                  ]
+                },
+                {
+                  "name": "End-use",
+                  "children": [
+                    {
+                      "name": "Transportation",
+                      "children": [
+                        {"name": "Plane Fuel"},
+                        {"name": "Maritime"},
+                        {"name": "Heavy and medium duty Road Transport"}
+                      ]
+                    },
+                    {
+                      "name": "Industry",
+                      "children": [
+                        {"name": "Ammonia"},
+                        {"name": "Refining"},
+                        {"name": "Steel"},
+                        {"name": "Chemicals"},
+                        {"name": "Industrial Heat"}
+                      ]
+                    },
+                    {"name": "Fuel cell manufacturers"},
+                    {
+                      "name": "Power",
+                      "children": [
+                        {"name": "Power Generation"},
+                        {"name": "Natural Gas Blending"}
+                      ]
+                    },
+                    {"name": "Building Heat"}
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Alternative Fuels",
+              "children": [
+                {"name": "Biogas / RNG"},
+                {"name": "Ammonia"},
+                {"name": "Methanol"},
+                {"name": "Renewable Diesel"},
+                {"name": "Butanol"},
+                {"name": "Ethanol"}
+              ]
+            },
+            {"name": "Enzymes"},
+            {"name": "Leak detection and management"},
+            {
+              "name": "High value chemicals",
+              "children": [
+                {"name": "Ethylene"},
+                {"name": "Propylene"},
+                {"name": "BTX aromatics"}
+              ]
+            },
+            {"name": "Carbon Capture and Sequestration"}
+          ]
+        },
+        {
+          "name": "Buildings",
+          "children": [
+            {
+              "name": "Construction",
+              "children": [
+                {"name": "Pre-Fabrication"},
+                {"name": "Building Materials"},
+                {"name": "Building Assembly Automation"},
+                {"name": "Building Code"},
+                {"name": "Additional Dwelling Unit"},
+                {"name": "Material Planning & Management"}
+              ]
+            },
+            {
+              "name": "Building Envelope",
+              "children": [
+                {"name": "Windows"},
+                {"name": "Insulation"},
+                {"name": "Air Sealing"},
+                {"name": "Roof"}
+              ]
+            },
+            {
+              "name": "Heating",
+              "children": [
+                {
+                  "name": "Heat pumps",
+                  "children": [
+                    {"name": "Ground"},
+                    {"name": "Air"},
+                    {"name": "Gas"},
+                    {"name": "Industrial"}
+                  ]
+                },
+                {"name": "Hydrogen"}
+              ]
+            },
+            {
+              "name": "Cooling",
+              "children": [
+                {"name": "Lower GHG refrigrants"},
+                {"name": "Smart refrigeration"}
+              ]
+            },
+            {
+              "name": "Home Automation",
+              "children": [
+                {"name": "Smart thermostats"},
+                {"name": "Data"},
+                {"name": "Lighting"}
+              ]
+            },
+            {
+              "name": "Induction Stoves",
+              "children": [
+                {"name": "Appliances & Equipment"}
+              ]
+            },
+            {
+              "name": "Software",
+              "children": [
+                {"name": "Planning"},
+                {"name": "Optimisation"},
+                {"name": "Financing"}
+              ]
+            },
+            {
+              "name": "Workforce",
+              "children": [
+                {"name": "Recruiting"},
+                {"name": "Training"},
+                {"name": "Engagement"},
+                {"name": "Software"}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Climate intelligence",
+          "children": [
+            {"name": "ESG ratings"},
+            {"name": "ESG commercial real estate"},
+            {"name": "Climate insurance"},
+            {"name": "Emissions monitoring"},
+            {"name": "Emergency Support"},
+            {
+              "name": "Carbon Intelligence Platform",
+              "children": [
+                {"name": "Climate Modeling"}
+              ]
+            },
+            {
+              "name": "Consumer-facing software",
+              "children": [
+                {"name": "Billing"},
+                {"name": "Sustainable investing tools"},
+                {"name": "Offsets purchasing programs"},
+                {"name": "Carbon footprint"},
+                {"name": "Carbon actions"}
+              ]
+            },
+            {
+              "name": "Enterprise software",
+              "children": [
+                {"name": "Carbon accounting"},
+                {"name": "Emissions Measurement"},
+                {"name": "Reporting"},
+                {"name": "Data platforms"},
+                {"name": "Net zero planning"},
+                {"name": "Offsets management"},
+                {"name": "Risk assessment"},
+                {"name": "Emissions monitoring (from internal sources)"}
+              ]
+            },
+            {"name": "Utility Focused Software"}
+          ]
+        },
+        {
+          "name": "Finance",
+          "children": [
+            {
+              "name": "Insurance",
+              "children": [
+                {
+                  "name": "Climate Risk",
+                  "children": [
+                    {"name": "Modeling"},
+                    {"name": "Analytics"}
+                  ]
+                },
+                {"name": "Brokers"},
+                {"name": "Reinsurance"}
+              ]
+            },
+            {
+              "name": "Investment",
+              "children": [
+                {"name": "Climate Angels"},
+                {"name": "Climate Accelerators"},
+                {"name": "Venture Capital"},
+                {"name": "Venture Debt and Growth Equity"},
+                {"name": "Corporate Investment"},
+                {"name": "Project finance and FOAK"}
+              ]
+            },
+            {
+              "name": "Capital Market",
+              "children": [
+                {"name": "Private Credit"},
+                {"name": "PE"},
+                {"name": "Endowments"}
+              ]
+            },
+            {
+              "name": "Ratings",
+              "children": [
+                {"name": "ESG"},
+                {"name": "Natural Capital"}
+              ]
+            },
+            {
+              "name": "Fintech",
+              "children": [
+                {"name": "Asset Monitoring"},
+                {"name": "Carbon Credit Tracking"},
+                {"name": "Tax Credits & Grants"},
+                {
+                  "name": "Consumer/Business Financing",
+                  "children": [
+                    {"name": "Platform"}
+                  ]
+                },
+                {"name": "Consumer"},
+                {"name": "Impact Investing"},
+                {"name": "Financing"}
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Carbon Removal",
+          "children": [
+            {
+              "name": "Solutions",
+              "children": [
+                {
+                  "name": "Engineered",
+                  "children": [
+                    {"name": "Biochar and Biomass Carbon Removal and Storage (BRICS)"},
+                    {"name": "Carbon mineralization"},
+                    {"name": "Enhanced weathering"},
+                    {"name": "Direct Air Capture (DAC)"},
+                    {"name": "Bioenergy with Carbon Capture and Storage (BECCS)"},
+                    {"name": "Soil carbon sequestration"}
+                  ]
+                },
+                {
+                  "name": "Nature based",
+                  "children": [
+                    {
+                      "name": "Forests",
+                      "children": [
+                        {"name": "Forestation"},
+                        {"name": "Tree Engineering"}
+                      ]
+                    },
+                    {
+                      "name": "Oceans",
+                      "children": [
+                        {"name": "Ocean alkalinity enhancement"},
+                        {"name": "Mangrove Restoration"}
+                      ]
+                    },
+                    {"name": "Wetlands and Peatlands"}
+                  ]
+                },
+                {
+                  "name": "Carbon offset verification, monitoring, and creation",
+                  "children": [
+                    {"name": "Project management platforms"},
+                    {"name": "Offset project crowdfunding"},
+                    {"name": "Offset APIs"},
+                    {"name": "Offsets databases and registries"},
+                    {"name": "Offsets marketplaces, exchanges and APIs"},
+                    {"name": "Verification and Certification"}
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
