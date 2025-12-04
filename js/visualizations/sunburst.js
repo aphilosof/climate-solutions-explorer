@@ -387,6 +387,11 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       // Hide cluster node labels (keep category labels)
       if (d.data._isCluster) return '';
 
+      // At root view: only show root (depth 0) and first circle (depth 1) labels
+      if (focus === root) {
+        if (d.depth > 1) return ''; // Hide depth 2+ at root view
+      }
+
       // Only show text if arc is large enough
       const arcAngle = d.x1 - d.x0;
       const arcHeight = d.y1 - d.y0;
@@ -703,6 +708,11 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         // Hide cluster node labels (keep category labels)
         if (d.data._isCluster) return '';
 
+        // At root view: only show root (depth 0) and first circle (depth 1) labels
+        if (p === root) {
+          if (d.depth > 1) return ''; // Hide depth 2+ at root view
+        }
+
         // Calculate visibility based on TARGET arc size (after zoom)
         const arcAngle = d.targetX1 - d.targetX0;
         const arcHeight = d.targetY1 - d.targetY0;
@@ -810,6 +820,11 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         .text(d => {
           // Hide cluster node labels (keep category labels)
           if (d.data._isCluster) return '';
+
+          // At root view: only show root (depth 0) and first circle (depth 1) labels
+          if (focus === root) {
+            if (d.depth > 1) return ''; // Hide depth 2+ at root view
+          }
 
           const arcAngle = d.x1 - d.x0;
           const arcHeight = d.y1 - d.y0;
