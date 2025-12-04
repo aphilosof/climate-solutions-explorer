@@ -116,13 +116,14 @@ git push origin main
 - `index.html`, `styles.css`
 - `js/` folder (all visualization modules)
 - `docs/` folder (FAQ)
-- `db/` folder (data files)
+- `db/latest/` folder (production data - ~856 KB)
 - `cd_logo_crop_green.png`
 - `LICENSE`, `README.md`
 
 **Development files** (stay private):
 - `CLAUDE.md` (AI development instructions)
 - `src/` (Python data processing scripts)
+- `db/varsions/` & `db/legacy_dbs/` (version history & old databases - ~11 MB)
 - `test_search.html` (test suite)
 - `.github/workflows/` (deployment configuration)
 - Old HTML versions (`index______.html`, etc.)
