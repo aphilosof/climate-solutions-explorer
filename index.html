@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climate Solutions Explorer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
+  <script src="https://unpkg.com/compromise-dates@latest/builds/compromise-dates.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>
+
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1 class="site-title">
+      <!-- 🌍 Climate Solutions Explorer</h1> -->
+      <a href="https://climatedrift.substack.com/" class="logo-link">
+        <img src="cd_logo_crop_green.png" alt="Logo" class="site-logo">
+      </a>
+       Climate Solutions Explorer
+  </h1>
+    <p class="site-description">
+      Explore and discover climate solutions. Use the search bar to find specific solutions,
+      filter by type or tag, and switch between different visualizations.
+      <a href="docs/FAQ.html" style="color: #40916c; text-decoration: none; border-bottom: 1px solid rgba(64, 145, 108, 0.5);">Learn more in the FAQ</a>.
+      (Disclaimer - Currently only showing a small test dataset).
+    </p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-section">
+    <!-- Search -->
+    <div class="search-box">
+      <input
+        type="text"
+        class="search-input"
+        id="searchInput"
+        placeholder="Search climate solutions..."
+      >
+      <div class="search-count" id="searchInfo">Loading...</div>
+    </div>
+
+    <!-- Reset Filters Button -->
+    <button class="reset-filters-btn" id="resetFilters" title="Clear all filters and search">
+      <span>🔄</span>
+      <span>Reset Filters</span>
+    </button>
+
+    <!-- Viz Selector -->
+    <div class="selector">
+      <button class="selector-btn" id="vizSelector">
+        <!-- <span class="option-icon" id="vizIcon">👀</span> -->
+        <span class="selector-value" id="vizValue">Sunburst</span>
+        <span class="selector-arrow">▼</span>
+      </button>
+      <div class="dropdown" id="vizDropdown">
+        <button class="dropdown-option active" data-viz="circle" data-icon="⭕" data-name="Circle Packing">
+          <span class="option-icon">⭕</span>
+          <span>Circle Packing</span>
+        </button>
+        <button class="dropdown-option" data-viz="dendrogram" data-icon="🌳" data-name="Dendrogram">
+          <span class="option-icon">🌳</span>
+          <span>Dendrogram</span>
+        </button>
+        <button class="dropdown-option" data-viz="treemap" data-icon="📦" data-name="Treemap">
+          <span class="option-icon">📦</span>
+          <span>Treemap</span>
+        <button class="dropdown-option" data-viz="sunburst" data-icon="☀️" data-name="Sunburst">
+          <span class="option-icon">☀️</span>
+          <span>Sunburst</span>
+        </button>
+        </button>
+      </div>
+    </div>
+
+    <!-- Type Filter -->
+    <div class="selector">
+      <button class="selector-btn" id="typeSelector">
+        <span class="selector-label">Type:</span>
+        <span class="selector-value" id="typeValue">All</span>
+        <span class="selector-arrow">▼</span>
+      </button>
+      <div class="dropdown" id="typeDropdown">
+        <button class="dropdown-option active" data-type="all">All Types</button>
+        <!-- Will be populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Tag Filter -->
+    <div class="selector">
+      <button class="selector-btn" id="tagSelector">
+        <span class="selector-label">Tag:</span>
+        <span class="selector-value" id="tagValue">All</span>
+        <span class="selector-arrow">▼</span>
+      </button>
+      <div class="dropdown" id="tagDropdown">
+        <button class="dropdown-option active" data-tag="all">All Tags</button>
+        <!-- Will be populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Author Filter -->
+    <div class="selector">
+      <button class="selector-btn" id="authorSelector">
+        <span class="selector-label">Author:</span>
+        <span class="selector-value" id="authorValue">All</span>
+        <span class="selector-arrow">▼</span>
+      </button>
+      <div class="dropdown" id="authorDropdown">
+        <button class="dropdown-option active" data-author="all">All Authors</button>
+        <!-- Will be populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Location Filter -->
+    <div class="selector">
+      <button class="selector-btn" id="locationSelector">
+        <span class="selector-label">Location:</span>
+        <span class="selector-value" id="locationValue">All</span>
+        <span class="selector-arrow">▼</span>
+      </button>
+      <div class="dropdown" id="locationDropdown">
+        <button class="dropdown-option active" data-location="all">All Locations</button>
+        <!-- Will be populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Visualization -->
+  <div class="viz-area">
+    <div id="visualization">
+      <div class="loading">
+        <div class="loading-icon">🌍</div>
+        <div class="loading-text">Loading Data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-left">
+      <span>© 2025 copyright</span>
+      <a href="mailto:contact@example.com">📧 Contact</a>
+      <a href="https://github.com/aphilosof/climate-solutions-explorer" target="_blank">
+        ⭐ GitHub
+      </a>
+      <a href="https://forms.gle/uNyqmvkd6XGxRq38A">💡Suggest an entry</a>
+    </div>
+    <div class="footer-right">
+      <button class="export-btn" id="exportJSON">
+        <span>📄</span>
+        <span>JSON</span>
+      </button>
+      <button class="export-btn" id="exportCSV">
+        <span>📊</span>
+        <span>CSV</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip">
+    <div class="tooltip-name"></div>
+    <div class="tooltip-details"></div>
+  </div>
+
+  <!-- Side Panel for Detailed Content -->
+  <div class="side-panel" id="sidePanel">
+    <!-- Content will be dynamically inserted here -->
+  </div>
+
+  <!-- Main Application Script -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

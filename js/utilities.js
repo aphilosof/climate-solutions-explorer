@@ -1,0 +1,537 @@
+/**
+ * utilities.js
+ * Utility functions for data processing, tooltips, and exports
+ */
+
+// Tooltip functions
+const CONTENT_THRESHOLD = 2; // Show in side panel if more than 2 items
+const TOOLTIP_HIDE_DELAY = 800; // Delay before hiding tooltip (ms)
+let tooltipHideTimeout = null; // Timeout for delayed hiding
+
+export function showTooltip(tooltip, event, d) {
+  // Clear any pending hide timeout
+  if (tooltipHideTimeout) {
+    clearTimeout(tooltipHideTimeout);
+    tooltipHideTimeout = null;
+  }
+  const name = d.data?.name || d.data?.entity_name || 'Unknown';
+  const type = d.data?.type || '';
+
+  tooltip.select('.tooltip-name').text(name);
+
+  // Check for content items in urls/content/items arrays
+  const items = d.data?.urls || d.data?.content || d.data?.items || [];
+
+  console.log(`Tooltip for "${name}": ${items ? items.length : 0} items`);
+
+  if (items && Array.isArray(items) && items.length > 0) {
+    // Check threshold: >2 items → show prompt, ≤2 items → show content
+    if (items.length > CONTENT_THRESHOLD) {
+      // More than threshold: Show prompt to click TOOLTIP (not circle)
+      console.log(`  → Showing "click to view" prompt (${items.length} > ${CONTENT_THRESHOLD})`);
+      let detailsHtml = `<div style="text-align: center; padding: 10px;">`;
+      detailsHtml += `<div style="margin-bottom: 5px;"><strong>${items.length} items available</strong></div>`;
+      detailsHtml += `<div style="font-size: 0.9em; color: #aaa;">Click this box to view details</div>`;
+      detailsHtml += `</div>`;
+      tooltip.select('.tooltip-details').html(detailsHtml);
+
+      // Make tooltip clickable and store data for click handler
+      tooltip.classed('clickable', true);
+      tooltip.datum(d); // Store node data in tooltip
+
+      // Position tooltip ONCE and don't update position on mousemove
+      // Only set position if not already showing
+      if (!tooltip.classed('show')) {
+        tooltip
+          .style('left', (event.pageX + 15) + 'px')
+          .style('top', (event.pageY - 15) + 'px');
+      }
+      // Don't update position if already visible - let user click it
+    } else {
+      console.log(`  → Showing inline content (${items.length} ≤ ${CONTENT_THRESHOLD})`);
+      // Threshold or less: Show content inline, make it clickable so user can interact
+      tooltip.classed('clickable', true);
+      tooltip.datum(d); // Store node data in tooltip
+
+      let detailsHtml = `<div style="margin-bottom: 5px;"><strong>Content (${items.length} items):</strong></div>`;
+      detailsHtml += `<div style="font-size: 0.85em; color: #aaa; margin-bottom: 8px;">Click to view in side panel</div>`;
+
+      items.forEach(item => {
+        const itemTitle = item.title || item.name || 'Untitled';
+        const itemType = item.type_ || item.type || '';
+        const itemAuthor = item.author || item.creator || '';
+        const itemUrl = item.url || '';
+        const itemDate = item.date || '';
+
+        detailsHtml += `<div style="margin: 8px 0; padding: 6px; border-left: 2px solid #40916c; background: rgba(64, 145, 108, 0.05);">`;
+
+        if (itemUrl) {
+          detailsHtml += `<div style="font-weight: 500;"><a href="${itemUrl}" target="_blank" onclick="event.stopPropagation()" style="color: #40916c; text-decoration: none;">${itemTitle}</a></div>`;
+        } else {
+          detailsHtml += `<div style="font-weight: 500;">${itemTitle}</div>`;
+        }
+
+        if (itemType || itemAuthor || itemDate) {
+          detailsHtml += `<div style="font-size: 0.85em; color: #666; margin-top: 3px;">`;
+          if (itemType) detailsHtml += `Type: ${itemType}`;
+          if (itemAuthor) detailsHtml += ` | Author: ${itemAuthor}`;
+          if (itemDate) detailsHtml += ` | ${itemDate}`;
+          detailsHtml += `</div>`;
+        }
+
+        detailsHtml += `</div>`;
+      });
+
+      tooltip.select('.tooltip-details').html(detailsHtml);
+
+      // Position ONCE and keep it fixed so user can interact with links
+      if (!tooltip.classed('show')) {
+        tooltip
+          .style('left', (event.pageX + 15) + 'px')
+          .style('top', (event.pageY - 15) + 'px');
+      }
+    }
+  } else {
+    // Fallback to type display if no content items
+    tooltip.classed('clickable', false);
+    tooltip.select('.tooltip-details').text(type ? `Type: ${type}` : '');
+
+    // Position normally
+    tooltip
+      .style('left', (event.pageX + 15) + 'px')
+      .style('top', (event.pageY - 15) + 'px');
+  }
+
+  // Always show the tooltip
+  tooltip.classed('show', true);
+}
+
+// Clear tooltip hide timeout
+export function clearTooltipTimeout() {
+  if (tooltipHideTimeout) {
+    clearTimeout(tooltipHideTimeout);
+    tooltipHideTimeout = null;
+  }
+}
+
+export function hideTooltip(tooltip) {
+  // Clear any existing timeout
+  clearTooltipTimeout();
+
+  // For clickable tooltips, delay hiding to give user time to move mouse to tooltip
+  if (tooltip.classed('clickable')) {
+    tooltipHideTimeout = setTimeout(() => {
+      // Only hide if mouse is not over tooltip
+      const tooltipNode = tooltip.node();
+      if (tooltipNode && !tooltipNode.matches(':hover')) {
+        tooltip.classed('show', false);
+        tooltip.classed('clickable', false);
+      }
+    }, TOOLTIP_HIDE_DELAY); // Longer grace period
+  } else {
+    // For non-clickable tooltips, hide immediately
+    tooltip.classed('show', false);
+    tooltip.classed('clickable', false);
+  }
+}
+
+// Side panel functions
+export function showSidePanel(sidePanel, d) {
+  const name = d.data?.name || d.data?.entity_name || 'Unknown';
+  const items = d.data?.urls || d.data?.content || d.data?.items || [];
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return; // Don't show panel if no items
+  }
+
+  // Store items in global variables for download function
+  window._currentPanelItems = items;
+  window._currentPanelName = name;
+
+  // Build panel content
+  let contentHtml = `
+    <div class="side-panel-header">
+      <h3>${name}</h3>
+      <div class="side-panel-actions">
+        <button class="download-btn" onclick="window.downloadPanelItems(window._currentPanelItems, window._currentPanelName)" title="Download as TSV">
+          <span>📥</span>
+          <span>Download TSV</span>
+        </button>
+        <button class="close-btn" onclick="window.closeSidePanel()">×</button>
+      </div>
+    </div>
+    <div class="side-panel-body">
+      <div style="margin-bottom: 10px;"><strong>${items.length} Items:</strong></div>
+  `;
+
+  items.forEach((item, index) => {
+    const itemTitle = item.title || item.name || 'Untitled';
+    const itemType = item.type_ || item.type || '';
+    const itemAuthor = item.author || item.creator || '';
+    const itemUrl = item.url || '';
+    const itemDate = item.date || '';
+    const itemDescription = item.description || item.abstract || '';
+    const itemTags = item.tags || '';
+
+    contentHtml += `<div class="side-panel-item">`;
+    contentHtml += `<div class="item-number">${index + 1}</div>`;
+    contentHtml += `<div class="item-content">`;
+
+    if (itemUrl) {
+      contentHtml += `<div class="item-title"><a href="${itemUrl}" target="_blank" onclick="event.stopPropagation()">${itemTitle}</a></div>`;
+    } else {
+      contentHtml += `<div class="item-title">${itemTitle}</div>`;
+    }
+
+    if (itemType || itemAuthor || itemDate) {
+      contentHtml += `<div class="item-meta">`;
+      if (itemType) contentHtml += `<span>Type: ${itemType}</span>`;
+      if (itemAuthor) contentHtml += `<span>Author: ${itemAuthor}</span>`;
+      if (itemDate) contentHtml += `<span>Date: ${itemDate}</span>`;
+      contentHtml += `</div>`;
+    }
+
+    if (itemDescription) {
+      contentHtml += `<div class="item-description">${itemDescription}</div>`;
+    }
+
+    if (itemTags) {
+      const tagsArray = Array.isArray(itemTags) ? itemTags : itemTags.split(',').map(t => t.trim());
+      contentHtml += `<div class="item-tags">`;
+      tagsArray.forEach(tag => {
+        contentHtml += `<span class="tag">${tag}</span>`;
+      });
+      contentHtml += `</div>`;
+    }
+
+    contentHtml += `</div></div>`;
+  });
+
+  contentHtml += `</div>`;
+
+  sidePanel.innerHTML = contentHtml;
+  sidePanel.classList.add('open');
+}
+
+export function hideSidePanel(sidePanel) {
+  sidePanel.classList.remove('open');
+}
+
+// Helper to check if node has many items (above threshold)
+export function hasManyItems(d) {
+  const items = d.data?.urls || d.data?.content || d.data?.items || [];
+  return items && Array.isArray(items) && items.length > CONTENT_THRESHOLD;
+}
+
+// Data preprocessing: Convert urls arrays into proper D3 hierarchy nodes
+export function preprocessDataForD3(node) {
+  const processed = {
+    name: node.name || node.entity_name || 'Unnamed'
+  };
+
+  // Preserve node-level properties
+  if (node.type) processed.type = node.type;
+  if (node.tags) processed.tags = node.tags;
+
+  // IMPORTANT: Preserve original items array for tooltip/side panel access
+  const items = node.url_data || node.urls || node.content || node.items || [];
+  if (Array.isArray(items) && items.length > 0) {
+    processed.urls = items; // Store original items array
+  }
+
+  // Collect all children (both category children and content items)
+  const childNodes = [];
+
+  // First, recursively process existing category children
+  if (node.children && Array.isArray(node.children) && node.children.length > 0) {
+    node.children.forEach(child => {
+      const processedChild = preprocessDataForD3(child);
+      // Only include child if it has content (children or is a leaf)
+      if (processedChild.children || processedChild.isLeaf) {
+        childNodes.push(processedChild);
+      }
+    });
+  }
+
+  // Then, convert urls/content/items arrays into leaf children
+  if (Array.isArray(items) && items.length > 0) {
+    items.forEach(item => {
+      // Extract meaningful name from various sources
+      let itemName = item.title || item.name;
+
+      // If no title/name, try to use URL domain or description as fallback
+      if (!itemName && item.url) {
+        try {
+          const urlObj = new URL(item.url);
+          itemName = urlObj.hostname.replace('www.', '');
+        } catch (e) {
+          itemName = item.url.substring(0, 50);
+        }
+      }
+
+      if (!itemName && item.description) {
+        itemName = item.description.substring(0, 50) + '...';
+      }
+
+      if (!itemName) {
+        itemName = 'Untitled';
+      }
+
+      const leafNode = {
+        name: itemName,
+        url: item.url || '',
+        type: item.type_ || item.type || '',
+        author: item.author || item.creator || '',
+        tags: item.tags || [],
+        description: item.description || item.abstract || '',
+        date: item.date || '',
+        confidence: item.confidence,
+        isLeaf: true,  // Mark as actual content leaf
+        // IMPORTANT: Preserve the original item as a single-item array for tooltip
+        urls: [item]  // Wrap in array so tooltip code works consistently
+      };
+      childNodes.push(leafNode);
+    });
+  }
+
+  // Add children array if we have children, OR mark as leaf if we have none
+  if (childNodes.length > 0) {
+    processed.children = childNodes;
+  } else {
+    // Empty category node - mark as placeholder leaf
+    processed.isLeaf = true;
+    processed.isEmpty = true;
+  }
+
+  return processed;
+}
+
+// Count total nodes in hierarchy
+export function countNodes(data) {
+  if (!data) return 0;
+
+  let count = 0;
+  function traverse(node) {
+    if (!node) return;
+    count++;
+    if (node.children) node.children.forEach(traverse);
+  }
+  traverse(data);
+  return count;
+}
+
+// Extract unique types and tags from data
+export function extractTypesAndTags(node, allTypes, allTags, allAuthors = null, allLocations = null) {
+  // Extract from node-level properties (if they exist)
+  if (node.type) allTypes.add(node.type);
+  if (node.tags && Array.isArray(node.tags)) {
+    node.tags.forEach(tag => allTags.add(tag));
+  }
+
+  // Extract from content arrays (url_data, urls, content, items)
+  const items = node.url_data || node.urls || node.content || node.items || [];
+  if (Array.isArray(items) && items.length > 0) {
+    items.forEach(item => {
+      // Handle various property name patterns
+      const type = item.type_ || item.type || item.category;
+      const tags = item.tags || item.keywords || item.categories;
+      const author = item.author || item.creator || item.source;
+      const location = item.location || item.country || item.region;
+
+      if (type && String(type).trim()) {
+        allTypes.add(String(type).trim());
+      }
+
+      // Extract authors
+      if (allAuthors && author && String(author).trim()) {
+        allAuthors.add(String(author).trim());
+      }
+
+      // Extract locations
+      if (allLocations && location && String(location).trim()) {
+        allLocations.add(String(location).trim());
+      }
+
+      // Handle tags - can be array or comma-separated string
+      if (Array.isArray(tags)) {
+        tags.forEach(tag => {
+          if (tag && String(tag).trim()) {
+            allTags.add(String(tag).trim());
+          }
+        });
+      } else if (tags && typeof tags === 'string') {
+        // Split comma-separated tags
+        tags.split(',').forEach(tag => {
+          const trimmed = tag.trim();
+          if (trimmed) {
+            allTags.add(trimmed);
+          }
+        });
+      }
+    });
+  }
+
+  // Recursively process children
+  if (node.children) {
+    node.children.forEach(child => extractTypesAndTags(child, allTypes, allTags, allAuthors, allLocations));
+  }
+}
+
+// Populate type dropdown
+export function populateTypeDropdown(allTypes, onSelect) {
+  const dropdown = document.getElementById('typeDropdown');
+  const sortedTypes = Array.from(allTypes).sort();
+
+  sortedTypes.forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'dropdown-option';
+    btn.dataset.type = type;
+    btn.textContent = type;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onSelect(type, btn);
+    });
+    dropdown.appendChild(btn);
+  });
+}
+
+// Populate tag dropdown
+export function populateTagDropdown(allTags, onSelect) {
+  const dropdown = document.getElementById('tagDropdown');
+  const sortedTags = Array.from(allTags).sort();
+
+  sortedTags.forEach(tag => {
+    const btn = document.createElement('button');
+    btn.className = 'dropdown-option';
+    btn.dataset.tag = tag;
+    btn.textContent = tag;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onSelect(tag, btn);
+    });
+    dropdown.appendChild(btn);
+  });
+}
+
+// Populate author dropdown
+export function populateAuthorDropdown(allAuthors, onSelect) {
+  const dropdown = document.getElementById('authorDropdown');
+  const sortedAuthors = Array.from(allAuthors).sort();
+
+  sortedAuthors.forEach(author => {
+    const btn = document.createElement('button');
+    btn.className = 'dropdown-option';
+    btn.dataset.author = author;
+    btn.textContent = author;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onSelect(author, btn);
+    });
+    dropdown.appendChild(btn);
+  });
+}
+
+// Populate location dropdown
+export function populateLocationDropdown(allLocations, onSelect) {
+  const dropdown = document.getElementById('locationDropdown');
+  const sortedLocations = Array.from(allLocations).sort();
+
+  sortedLocations.forEach(location => {
+    const btn = document.createElement('button');
+    btn.className = 'dropdown-option';
+    btn.dataset.location = location;
+    btn.textContent = location;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onSelect(location, btn);
+    });
+    dropdown.appendChild(btn);
+  });
+}
+
+// Setup dropdown functionality
+export function setupDropdown(btnId, dropdownId) {
+  const btn = document.getElementById(btnId);
+  const dropdown = document.getElementById(dropdownId);
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeAllDropdowns();
+    dropdown.classList.toggle('show');
+  });
+}
+
+// Close all dropdowns
+export function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
+}
+
+// Flatten hierarchy for export
+export function flattenHierarchy(node, parent = null, result = []) {
+  const entry = {
+    name: node.name || node.entity_name || '',
+    parent: parent || '',
+    type: node.type || '',
+    tags: Array.isArray(node.tags) ? node.tags.join(', ') : '',
+    url: node.url || '',
+    author: node.author || '',
+    description: node.description || '',
+    date: node.date || ''
+  };
+
+  result.push(entry);
+
+  if (node.children) {
+    node.children.forEach(child => {
+      flattenHierarchy(child, node.name, result);
+    });
+  }
+
+  return result;
+}
+
+// Download data as JSON
+export function downloadJSON(data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'climate-solutions-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Download data as CSV
+export function downloadCSV(data) {
+  const flatData = flattenHierarchy(data);
+  const headers = Object.keys(flatData[0]);
+  const csvContent = [
+    headers.join(','),
+    ...flatData.map(row =>
+      headers.map(header => {
+        const value = row[header] || '';
+        return `"${String(value).replace(/"/g, '""')}"`;
+      }).join(',')
+    )
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'climate-solutions-data.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Download the source TSV file
+export function downloadItemsAsTSV(items, nodeName) {
+  // Path to the source TSV file
+  const tsvPath = 'db/latest/CD_Solution_map_2_content.tsv';
+
+  // Create download link
+  const a = document.createElement('a');
+  a.href = tsvPath;
+  a.download = 'CD_Solution_map_2_content.tsv';
+  a.click();
+}
