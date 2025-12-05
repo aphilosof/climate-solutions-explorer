@@ -145,6 +145,7 @@ function renderVisualization() {
   // Clean up any lingering visualization elements before rendering
   d3.selectAll('.dendrogram-home').remove();
   d3.selectAll('.zoom-controls').remove();
+  d3.selectAll('.treemap-zoom-controls').remove();
 
   switch (currentViz) {
     case 'circle':
