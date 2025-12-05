@@ -140,7 +140,7 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
 
   tagNodesWithCategory(root);
 
-  // Helper function to cluster terminal nodes for any parent (≥5 terminals)
+  // Helper function to cluster terminal nodes for any parent (≥3 terminals)
   function clusterTerminalNodes(parentNode) {
     if (!parentNode.children) return;
 
@@ -151,8 +151,8 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       child.children && child.children.length > 0
     );
 
-    // Only cluster if 5 or more terminal nodes
-    if (terminals.length >= 5) {
+    // Only cluster if 3 or more terminal nodes (more aggressive clustering)
+    if (terminals.length >= 3) {
       // Aggregate all URLs from terminal nodes
       const aggregatedURLs = [];
       terminals.forEach(terminal => {
@@ -233,8 +233,17 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       return 0.5; // Category nodes with children
     })
     .attr('d', arc)
-    .attr('stroke', d => d.data.isSearchMatch ? '#cc0000' : 'rgba(255, 255, 255, 0.2)')
-    .attr('stroke-width', d => d.data.isSearchMatch ? 2 : 1)
+    .attr('stroke', d => {
+      // Cluster nodes get distinctive dashed border
+      if (d.data._isCluster) return 'rgba(255, 255, 255, 0.5)';
+      return d.data.isSearchMatch ? '#cc0000' : 'rgba(255, 255, 255, 0.2)';
+    })
+    .attr('stroke-width', d => {
+      // Cluster nodes get thicker border
+      if (d.data._isCluster) return 2;
+      return d.data.isSearchMatch ? 2 : 1;
+    })
+    .attr('stroke-dasharray', d => d.data._isCluster ? '5,3' : null)
     .style('cursor', d => {
       const items = d.data?.urls || d.data?.content || d.data?.items || [];
       return (d.data._isCluster || d.children || items.length > 0) ? 'pointer' : 'default';
@@ -268,24 +277,42 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         tooltip.html(`
           <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
           <div style="font-size: 12px; color: #666;">
-            ${items.length} item${items.length === 1 ? '' : 's'} - Click to view
+            📋 ${items.length} solution${items.length === 1 ? '' : 's'} - Click to view list
           </div>
         `);
       } else if (d.children) {
-        // Parent category - show subcategory count
-        const numChildren = d.children.length;
-        tooltip.html(`
-          <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
-          <div style="font-size: 12px; color: #666;">
-            ${numChildren} subcategor${numChildren === 1 ? 'y' : 'ies'} - Click to zoom
-          </div>
-        `);
+        // Check if children are actual subcategories (with their own children) or just terminal nodes
+        const hasRealSubcategories = d.children.some(child => child.children && child.children.length > 0);
+
+        if (hasRealSubcategories) {
+          // Has actual subcategories - will zoom in
+          const numChildren = d.children.length;
+          tooltip.html(`
+            <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
+            <div style="font-size: 12px; color: #666;">
+              🔍 ${numChildren} subcategor${numChildren === 1 ? 'y' : 'ies'} - Click to zoom in
+            </div>
+          `);
+        } else {
+          // Only has terminal nodes - count total solutions across all children
+          let totalSolutions = 0;
+          d.children.forEach(child => {
+            const childItems = child.data?.urls || child.data?.content || child.data?.items || [];
+            totalSolutions += childItems.length;
+          });
+          tooltip.html(`
+            <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
+            <div style="font-size: 12px; color: #666;">
+              📋 ${totalSolutions} solution${totalSolutions === 1 ? '' : 's'} - Click to view list
+            </div>
+          `);
+        }
       } else if (items.length > 0) {
         // Terminal leaf with items - show item count
         tooltip.html(`
           <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
           <div style="font-size: 12px; color: #666;">
-            ${items.length} item${items.length === 1 ? '' : 's'} - Click to view
+            📋 ${items.length} solution${items.length === 1 ? '' : 's'} - Click to view list
           </div>
         `);
       } else {
@@ -390,6 +417,12 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       // At root view: only show root (depth 0) and first circle (depth 1) labels
       if (focus === root) {
         if (d.depth > 1) return ''; // Hide depth 2+ at root view
+      } else {
+        // When zoomed in: only show labels for focus and its direct children
+        // Calculate relative depth from focus
+        const relativeDepth = d.depth - focus.depth;
+        if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
+        if (relativeDepth < 0) return ''; // Hide ancestors
       }
 
       // Only show text if arc is large enough
@@ -475,7 +508,7 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
           .html(`
             <div style="font-weight: bold; margin-bottom: 4px;">Climate Solution</div>
             <div style="font-size: 12px; color: #666;">
-              ${items.length} root solution${items.length === 1 ? '' : 's'} - Click to view
+              📋 ${items.length} root solution${items.length === 1 ? '' : 's'} - Click to view list
             </div>
           `);
       } else {
@@ -489,7 +522,7 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
           .html(`
             <div style="font-weight: bold; margin-bottom: 4px;">Climate Solution</div>
             <div style="font-size: 12px; color: #666;">
-              Click to return to root view
+              ⬆️ Click to zoom out to root view
             </div>
           `);
       }
@@ -523,8 +556,8 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       }
     });
 
-  // Add "Climate Solution" text label to center circle
-  g.append('text')
+  // Add "Climate Solution" text label to center circle (only visible at root view)
+  const centerLabel = g.append('text')
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
     .style('font-size', '14px')
@@ -633,6 +666,10 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     const transition = g.transition()
       .duration(750);
 
+    // Hide center label when zoomed in, show when at root
+    centerLabel.transition(transition)
+      .style('opacity', p === root ? 1 : 0);
+
     // Calculate radial scale based on available space and deepest descendant
     let scale;
 
@@ -711,6 +748,12 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         // At root view: only show root (depth 0) and first circle (depth 1) labels
         if (p === root) {
           if (d.depth > 1) return ''; // Hide depth 2+ at root view
+        } else {
+          // When zoomed in: only show labels for focus and its direct children
+          // Calculate relative depth from focus
+          const relativeDepth = d.depth - p.depth;
+          if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
+          if (relativeDepth < 0) return ''; // Hide ancestors
         }
 
         // Calculate visibility based on TARGET arc size (after zoom)
@@ -824,6 +867,12 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
           // At root view: only show root (depth 0) and first circle (depth 1) labels
           if (focus === root) {
             if (d.depth > 1) return ''; // Hide depth 2+ at root view
+          } else {
+            // When zoomed in: only show labels for focus and its direct children
+            // Calculate relative depth from focus
+            const relativeDepth = d.depth - focus.depth;
+            if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
+            if (relativeDepth < 0) return ''; // Hide ancestors
           }
 
           const arcAngle = d.x1 - d.x0;
