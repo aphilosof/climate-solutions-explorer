@@ -142,6 +142,10 @@ function renderVisualization() {
   const wrappedShowTooltip = (event, d) => showTooltip(tooltip, event, d);
   const wrappedHideTooltip = () => hideTooltip(tooltip);
 
+  // Clean up any lingering visualization elements before rendering
+  d3.selectAll('.dendrogram-home').remove();
+  d3.selectAll('.zoom-controls').remove();
+
   switch (currentViz) {
     case 'circle':
       renderCirclePacking(filteredData, wrappedShowTooltip, wrappedHideTooltip);
@@ -157,8 +161,18 @@ function renderVisualization() {
       break;
   }
 
+  // Show the home button after rendering visualization
+  if (window.showHomeButton) {
+    window.showHomeButton();
+  }
+
   updateSearchInfo(filteredData);
 }
+
+// Handle home button click - simply re-render the visualization to reset state
+window.addEventListener('resetVisualization', () => {
+  renderVisualization();
+});
 
 // Type filter selection
 function selectType(type, btn) {

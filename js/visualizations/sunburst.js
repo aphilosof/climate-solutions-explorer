@@ -567,97 +567,18 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     .style('user-select', 'none')
     .text('Climate Solution');
 
-  // Add zoom controls (responsive positioning)
-  const isMobile = width < 768;
-  const buttonSize = isMobile ? 32 : 40;
-  const buttonFontSize = isMobile ? 18 : 24;
+  // Listen for reset event from global home button
+  const resetHandler = () => {
+    zoomToNode(root);
+  };
 
-  const zoomControls = d3.select('#visualization')
-    .append('div')
-    .attr('class', 'zoom-controls')
-    .style('position', 'absolute')
-    .style('z-index', '1000');
+  // Add event listener for reset
+  window.addEventListener('resetVisualization', resetHandler);
 
-  if (isMobile) {
-    // Mobile: bottom center, horizontal layout
-    zoomControls
-      .style('left', '50%')
-      .style('bottom', '5px')
-      .style('transform', 'translateX(-50%)')
-      .style('display', 'flex')
-      .style('flex-direction', 'row')
-      .style('gap', '8px')
-      .style('background', 'rgba(0, 0, 0, 0.3)')
-      .style('padding', '6px')
-      .style('border-radius', '8px');
-  } else {
-    // Desktop: left side, vertical layout
-    zoomControls
-      .style('left', '20px')
-      .style('top', '50%')
-      .style('transform', 'translateY(-50%)')
-      .style('display', 'flex')
-      .style('flex-direction', 'column')
-      .style('gap', '8px');
-  }
-
-  // Zoom out/up button (go to parent)
-  zoomControls.append('button')
-    .attr('class', 'zoom-btn')
-    .attr('title', 'Zoom out (parent level)')
-    .style('width', `${buttonSize}px`)
-    .style('height', `${buttonSize}px`)
-    .style('padding', isMobile ? '6px' : '8px')
-    .style('background', '#40916c')
-    .style('color', 'white')
-    .style('border', 'none')
-    .style('border-radius', '4px')
-    .style('cursor', 'pointer')
-    .style('font-size', `${buttonFontSize}px`)
-    .style('display', 'flex')
-    .style('align-items', 'center')
-    .style('justify-content', 'center')
-    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.2)')
-    .html('↑')
-    .on('mouseover', function() {
-      d3.select(this).style('background', '#357a5a');
-    })
-    .on('mouseout', function() {
-      d3.select(this).style('background', '#40916c');
-    })
-    .on('click', () => {
-      if (focus.parent) {
-        zoomToNode(focus.parent);
-      }
-    });
-
-  // Reset button (back to root)
-  zoomControls.append('button')
-    .attr('class', 'zoom-btn')
-    .attr('title', 'Reset to root')
-    .style('width', `${buttonSize}px`)
-    .style('height', `${buttonSize}px`)
-    .style('padding', isMobile ? '6px' : '8px')
-    .style('background', '#40916c')
-    .style('color', 'white')
-    .style('border', 'none')
-    .style('border-radius', '4px')
-    .style('cursor', 'pointer')
-    .style('font-size', isMobile ? '16px' : '20px')
-    .style('display', 'flex')
-    .style('align-items', 'center')
-    .style('justify-content', 'center')
-    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.2)')
-    .html('⌂')
-    .on('mouseover', function() {
-      d3.select(this).style('background', '#357a5a');
-    })
-    .on('mouseout', function() {
-      d3.select(this).style('background', '#40916c');
-    })
-    .on('click', () => {
-      zoomToNode(root);
-    });
+  // Clean up event listener on window resize (when visualization is re-rendered)
+  const cleanupResetHandler = () => {
+    window.removeEventListener('resetVisualization', resetHandler);
+  };
 
   // Zoom/focus function - actually zoom/transform arcs
   function zoomToNode(p) {

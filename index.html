@@ -30,117 +30,136 @@
     </p>
   </div>
 
-  <!-- Controls -->
-  <div class="controls-section">
-    <!-- Main Controls Row (Search, Reset, Viz Selector) -->
-    <div class="main-controls-row">
+  <!-- Floating Menu Toggle Button -->
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+    <span class="hamburger-icon">☰</span>
+  </button>
+
+  <!-- Floating Home Button (for all visualizations) -->
+  <button class="home-toggle" id="homeToggle" aria-label="Reset to home view" style="display: none;">
+    <span class="home-icon">⌂</span>
+  </button>
+
+  <!-- Floating Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3>Controls</h3>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
+    </div>
+
+    <div class="sidebar-content">
       <!-- Search -->
-      <div class="search-box">
-      <input
-        type="text"
-        class="search-input"
-        id="searchInput"
-        placeholder="Search climate solutions..."
-      >
-      <div class="search-count" id="searchInfo">Loading...</div>
-    </div>
+      <div class="sidebar-section">
+        <label class="sidebar-label">Search</label>
+        <div class="search-box">
+          <input
+            type="text"
+            class="search-input"
+            id="searchInput"
+            placeholder="Search climate solutions..."
+          >
+          <div class="search-count" id="searchInfo">Loading...</div>
+        </div>
+      </div>
 
-    <!-- Reset Filters Button -->
-    <button class="reset-filters-btn" id="resetFilters" title="Clear all filters and search">
-      <span>🔄</span>
-      <span>Reset Filters</span>
-    </button>
-
-    <!-- Viz Selector -->
-    <div class="selector">
-      <button class="selector-btn" id="vizSelector">
-        <!-- <span class="option-icon" id="vizIcon">👀</span> -->
-        <span class="selector-value" id="vizValue">Sunburst</span>
-        <span class="selector-arrow">▼</span>
-      </button>
-      <div class="dropdown" id="vizDropdown">
-        <button class="dropdown-option active" data-viz="circle" data-icon="⭕" data-name="Circle Packing">
-          <span class="option-icon">⭕</span>
-          <span>Circle Packing</span>
-        </button>
-        <button class="dropdown-option" data-viz="dendrogram" data-icon="🌳" data-name="Dendrogram">
-          <span class="option-icon">🌳</span>
-          <span>Dendrogram</span>
-        </button>
-        <button class="dropdown-option" data-viz="treemap" data-icon="📦" data-name="Treemap">
-          <span class="option-icon">📦</span>
-          <span>Treemap</span>
-        <button class="dropdown-option" data-viz="sunburst" data-icon="☀️" data-name="Sunburst">
-          <span class="option-icon">☀️</span>
-          <span>Sunburst</span>
-        </button>
+      <!-- Reset Filters Button -->
+      <div class="sidebar-section">
+        <button class="reset-filters-btn" id="resetFilters" title="Clear all filters and search">
+          <span>🔄</span>
+          <span>Reset Filters</span>
         </button>
       </div>
-    </div>
-    </div><!-- End main-controls-row -->
 
-    <!-- Filters Row -->
-    <div class="filters-row">
-      <button class="filters-toggle" id="filtersToggle">
-        <span class="filters-toggle-icon" id="filtersToggleIcon">▼</span>
-        <span>Filters</span>
-      </button>
+      <!-- Viz Selector -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">Visualization</label>
+        <div class="selector">
+          <button class="selector-btn" id="vizSelector">
+            <span class="selector-value" id="vizValue">Sunburst</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="vizDropdown">
+            <button class="dropdown-option active" data-viz="circle" data-icon="⭕" data-name="Circle Packing">
+              <span class="option-icon">⭕</span>
+              <span>Circle Packing</span>
+            </button>
+            <button class="dropdown-option" data-viz="dendrogram" data-icon="🌳" data-name="Dendrogram">
+              <span class="option-icon">🌳</span>
+              <span>Dendrogram</span>
+            </button>
+            <button class="dropdown-option" data-viz="treemap" data-icon="📦" data-name="Treemap">
+              <span class="option-icon">📦</span>
+              <span>Treemap</span>
+            <button class="dropdown-option" data-viz="sunburst" data-icon="☀️" data-name="Sunburst">
+              <span class="option-icon">☀️</span>
+              <span>Sunburst</span>
+            </button>
+            </button>
+          </div>
+        </div>
+      </div>
 
-      <div class="filters-container" id="filtersContainer">
+      <!-- Filters -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">Filters</label>
+
         <!-- Type Filter -->
-    <div class="selector">
-      <button class="selector-btn" id="typeSelector">
-        <span class="selector-label">Type:</span>
-        <span class="selector-value" id="typeValue">All</span>
-        <span class="selector-arrow">▼</span>
-      </button>
-      <div class="dropdown" id="typeDropdown">
-        <button class="dropdown-option active" data-type="all">All Types</button>
-        <!-- Will be populated dynamically -->
-      </div>
-    </div>
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="typeSelector">
+            <span class="selector-label">Type:</span>
+            <span class="selector-value" id="typeValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="typeDropdown">
+            <button class="dropdown-option active" data-type="all">All Types</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
 
-    <!-- Tag Filter -->
-    <div class="selector">
-      <button class="selector-btn" id="tagSelector">
-        <span class="selector-label">Tag:</span>
-        <span class="selector-value" id="tagValue">All</span>
-        <span class="selector-arrow">▼</span>
-      </button>
-      <div class="dropdown" id="tagDropdown">
-        <button class="dropdown-option active" data-tag="all">All Tags</button>
-        <!-- Will be populated dynamically -->
-      </div>
-    </div>
+        <!-- Tag Filter -->
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="tagSelector">
+            <span class="selector-label">Tag:</span>
+            <span class="selector-value" id="tagValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="tagDropdown">
+            <button class="dropdown-option active" data-tag="all">All Tags</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
 
-    <!-- Author Filter -->
-    <div class="selector">
-      <button class="selector-btn" id="authorSelector">
-        <span class="selector-label">Author:</span>
-        <span class="selector-value" id="authorValue">All</span>
-        <span class="selector-arrow">▼</span>
-      </button>
-      <div class="dropdown" id="authorDropdown">
-        <button class="dropdown-option active" data-author="all">All Authors</button>
-        <!-- Will be populated dynamically -->
-      </div>
-    </div>
+        <!-- Author Filter -->
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="authorSelector">
+            <span class="selector-label">Author:</span>
+            <span class="selector-value" id="authorValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="authorDropdown">
+            <button class="dropdown-option active" data-author="all">All Authors</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
 
-    <!-- Location Filter -->
-    <div class="selector">
-      <button class="selector-btn" id="locationSelector">
-        <span class="selector-label">Location:</span>
-        <span class="selector-value" id="locationValue">All</span>
-        <span class="selector-arrow">▼</span>
-      </button>
-      <div class="dropdown" id="locationDropdown">
-        <button class="dropdown-option active" data-location="all">All Locations</button>
-        <!-- Will be populated dynamically -->
+        <!-- Location Filter -->
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="locationSelector">
+            <span class="selector-label">Location:</span>
+            <span class="selector-value" id="locationValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="locationDropdown">
+            <button class="dropdown-option active" data-location="all">All Locations</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
       </div>
     </div>
-      </div><!-- End filters-container -->
-    </div><!-- End filters-row -->
-  </div><!-- End controls-section -->
+  </div>
+
+  <!-- Sidebar Overlay (to close sidebar when clicking outside) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <!-- Visualization -->
   <div class="viz-area">
@@ -187,27 +206,100 @@
 
   <!-- UI Enhancement Script -->
   <script>
-    // Auto-hide description after 10 seconds
+    // Auto-hide description after 6 seconds
+    let descriptionHidden = false;
     setTimeout(() => {
       const description = document.getElementById('siteDescription');
       if (description) {
         description.style.maxHeight = '0';
         description.style.opacity = '0';
         description.style.marginBottom = '0';
+        descriptionHidden = true;
       }
-    }, 10000);
+    }, 6000);
 
-    // Toggle filters
-    const filtersToggle = document.getElementById('filtersToggle');
-    const filtersContainer = document.getElementById('filtersContainer');
-    const filtersToggleIcon = document.getElementById('filtersToggleIcon');
-
-    if (filtersToggle && filtersContainer && filtersToggleIcon) {
-      filtersToggle.addEventListener('click', () => {
-        filtersContainer.classList.toggle('collapsed');
-        filtersToggleIcon.classList.toggle('rotated');
+    // Click site title to show description again
+    const siteTitle = document.querySelector('.site-title');
+    if (siteTitle) {
+      siteTitle.style.cursor = 'pointer';
+      siteTitle.addEventListener('click', () => {
+        const description = document.getElementById('siteDescription');
+        if (description && descriptionHidden) {
+          description.style.maxHeight = '100px';
+          description.style.opacity = '1';
+          description.style.marginBottom = '15px';
+          descriptionHidden = false;
+          // Auto-hide again after 6 seconds
+          setTimeout(() => {
+            description.style.maxHeight = '0';
+            description.style.opacity = '0';
+            description.style.marginBottom = '0';
+            descriptionHidden = true;
+          }, 6000);
+        }
       });
     }
+
+    // Sidebar toggle functionality
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      sidebarOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden'; // Prevent body scroll when sidebar open
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+      document.body.style.overflow = ''; // Restore body scroll
+    }
+
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', openSidebar);
+    }
+
+    if (sidebarClose) {
+      sidebarClose.addEventListener('click', closeSidebar);
+    }
+
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+        closeSidebar();
+      }
+    });
+
+    // Home button functionality
+    // The home button will trigger a custom event that visualizations can listen to
+    const homeToggle = document.getElementById('homeToggle');
+    if (homeToggle) {
+      homeToggle.addEventListener('click', () => {
+        // Dispatch custom event that visualizations can listen to
+        window.dispatchEvent(new CustomEvent('resetVisualization'));
+      });
+    }
+
+    // Show/hide home button based on visualization changes
+    // This will be called by main.js after rendering a visualization
+    window.showHomeButton = function() {
+      if (homeToggle) {
+        homeToggle.style.display = 'flex';
+      }
+    };
+
+    window.hideHomeButton = function() {
+      if (homeToggle) {
+        homeToggle.style.display = 'none';
+      }
+    };
   </script>
 
   <!-- Main Application Script -->

@@ -613,99 +613,20 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
     }
   });
 
-  // Add zoom controls (positioned on LEFT side, NOT overlaying viz)
-  const isMobile = width < 768;
-  const buttonSize = isMobile ? 32 : 40;
-  const buttonFontSize = isMobile ? 16 : 20;
+  // Listen for reset event from global home button
+  const resetHandler = () => {
+    // Clear navigation stack and go to root
+    navigationStack = [];
+    render(root);
+  };
 
-  const zoomControls = d3.select('#visualization')
-    .append('div')
-    .attr('class', 'treemap-zoom-controls')
-    .style('position', 'absolute')
-    .style('z-index', '1000');
+  // Add event listener for reset
+  window.addEventListener('resetVisualization', resetHandler);
 
-  if (isMobile) {
-    // Mobile: bottom center
-    zoomControls
-      .style('left', '50%')
-      .style('bottom', '5px')
-      .style('transform', 'translateX(-50%)')
-      .style('display', 'flex')
-      .style('flex-direction', 'row')
-      .style('gap', '8px')
-      .style('background', 'rgba(0, 0, 0, 0.3)')
-      .style('padding', '6px')
-      .style('border-radius', '8px');
-  } else {
-    // Desktop: LEFT side
-    zoomControls
-      .style('left', '20px')
-      .style('top', '50%')
-      .style('transform', 'translateY(-50%)')
-      .style('display', 'flex')
-      .style('flex-direction', 'column')
-      .style('gap', '8px');
-  }
-
-  // Up button (go to parent)
-  zoomControls.append('button')
-    .attr('title', 'Go up one level')
-    .style('width', `${buttonSize}px`)
-    .style('height', `${buttonSize}px`)
-    .style('padding', isMobile ? '6px' : '8px')
-    .style('background', '#40916c')
-    .style('color', 'white')
-    .style('border', 'none')
-    .style('border-radius', '4px')
-    .style('cursor', 'pointer')
-    .style('font-size', `${buttonFontSize + 4}px`)
-    .style('display', 'flex')
-    .style('align-items', 'center')
-    .style('justify-content', 'center')
-    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.2)')
-    .html('↑')
-    .on('mouseover', function() {
-      d3.select(this).style('background', '#357a5a');
-    })
-    .on('mouseout', function() {
-      d3.select(this).style('background', '#40916c');
-    })
-    .on('click', () => {
-      // Go back using navigation stack
-      if (navigationStack.length > 0) {
-        const previousRoot = navigationStack.pop();
-        drillDown(previousRoot, true);  // true = isBackNavigation
-      }
-    });
-
-  // Home button (reset to root)
-  zoomControls.append('button')
-    .attr('title', 'Reset to root')
-    .style('width', `${buttonSize}px`)
-    .style('height', `${buttonSize}px`)
-    .style('padding', isMobile ? '6px' : '8px')
-    .style('background', '#40916c')
-    .style('color', 'white')
-    .style('border', 'none')
-    .style('border-radius', '4px')
-    .style('cursor', 'pointer')
-    .style('font-size', `${buttonFontSize}px`)
-    .style('display', 'flex')
-    .style('align-items', 'center')
-    .style('justify-content', 'center')
-    .style('box-shadow', '0 2px 4px rgba(0,0,0,0.2)')
-    .html('⌂')
-    .on('mouseover', function() {
-      d3.select(this).style('background', '#357a5a');
-    })
-    .on('mouseout', function() {
-      d3.select(this).style('background', '#40916c');
-    })
-    .on('click', () => {
-      // Clear navigation stack and go to root
-      navigationStack = [];
-      render(root);
-    });
+  // Clean up event listener on window resize (when visualization is re-rendered)
+  const cleanupResetHandler = () => {
+    window.removeEventListener('resetVisualization', resetHandler);
+  };
 
   // Handle window resize with debounce
   let resizeTimer;

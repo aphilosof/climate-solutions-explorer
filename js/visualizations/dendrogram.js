@@ -827,89 +827,32 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
       // If frozen, tooltip stays visible until timer expires
     });
 
-  // Add reset/home button - HIGHLY VISIBLE, positioned relative to viz container
-  const isMobile = width < 768;
-  const buttonSize = isMobile ? 40 : 50;
+  // Listen for reset event from global home button
+  const resetHandler = () => {
+    // Reset to root and restore initial collapsed state (show only 3 main categories)
+    root.descendants().forEach(d => {
+      // Clear sibling selection flags
+      d._hiddenBySiblingSelection = false;
 
-  // Remove any existing dendrogram home buttons
-  d3.selectAll('.dendrogram-home').remove();
-
-  // Get the visualization container position
-  const vizContainer = document.getElementById('visualization');
-  const vizRect = vizContainer.getBoundingClientRect();
-
-  const resetButton = d3.select('body')
-    .append('div')
-    .attr('class', 'zoom-controls dendrogram-home')
-    .style('position', 'fixed')
-    .style('z-index', '99999')
-    .style('pointer-events', 'auto');
-
-  if (isMobile) {
-    // Mobile: bottom center of visualization
-    resetButton
-      .style('left', (vizRect.left + vizRect.width / 2) + 'px')
-      .style('bottom', (window.innerHeight - vizRect.bottom + 15) + 'px')
-      .style('transform', 'translateX(-50%)')
-      .style('background', 'rgba(0, 0, 0, 0.7)')
-      .style('padding', '8px')
-      .style('border-radius', '12px');
-  } else {
-    // Desktop: BOTTOM LEFT of visualization - HIGHLY VISIBLE
-    resetButton
-      .style('left', (vizRect.left + 20) + 'px')
-      .style('bottom', (window.innerHeight - vizRect.bottom + 20) + 'px')
-      .style('background', 'rgba(0, 0, 0, 0.7)')
-      .style('padding', '8px')
-      .style('border-radius', '12px');
-  }
-
-  resetButton.append('button')
-    .attr('class', 'zoom-btn')
-    .attr('title', 'Collapse all and reset')
-    .style('width', `${buttonSize}px`)
-    .style('height', `${buttonSize}px`)
-    .style('padding', isMobile ? '8px' : '10px')
-    .style('background', '#40916c')
-    .style('color', 'white')
-    .style('border', '2px solid rgba(255, 255, 255, 0.3)')
-    .style('border-radius', '8px')
-    .style('cursor', 'pointer')
-    .style('font-size', isMobile ? '20px' : '24px')
-    .style('display', 'flex')
-    .style('align-items', 'center')
-    .style('justify-content', 'center')
-    .style('box-shadow', '0 4px 12px rgba(0,0,0,0.4)')
-    .html('⌂')
-    .on('mouseover', function() {
-      d3.select(this)
-        .style('background', '#357a5a')
-        .style('transform', 'scale(1.1)')
-        .style('box-shadow', '0 6px 16px rgba(0,0,0,0.6)');
-    })
-    .on('mouseout', function() {
-      d3.select(this)
-        .style('background', '#40916c')
-        .style('transform', 'scale(1)')
-        .style('box-shadow', '0 4px 12px rgba(0,0,0,0.4)');
-    })
-    .on('click', () => {
-      // Reset to root and restore initial collapsed state (show only 3 main categories)
-      root.descendants().forEach(d => {
-        // Clear sibling selection flags
-        d._hiddenBySiblingSelection = false;
-
-        if (d.depth >= 1) {
-          // Re-collapse depth 1+ nodes to show only main categories
-          if (d._children || d.children) {
-            d._children = d._children || d.children;
-            d.children = null;
-          }
+      if (d.depth >= 1) {
+        // Re-collapse depth 1+ nodes to show only main categories
+        if (d._children || d.children) {
+          d._children = d._children || d.children;
+          d.children = null;
         }
-      });
-      // Reset view to root
-      update(root);
+      }
     });
+    // Reset view to root
+    update(root);
+  };
+
+  // Add event listener for reset
+  window.addEventListener('resetVisualization', resetHandler);
+
+  // Clean up event listener on window resize (when visualization is re-rendered)
+  const cleanupResetHandler = () => {
+    window.removeEventListener('resetVisualization', resetHandler);
+  };
 
   // Handle window resize - updates like circlePacking
   let resizeTimer;
