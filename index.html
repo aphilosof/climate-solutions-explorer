@@ -22,7 +22,7 @@
       </a>
        Climate Solutions Explorer
   </h1>
-    <p class="site-description">
+    <p class="site-description" id="siteDescription">
       Explore and discover climate solutions. Use the search bar to find specific solutions,
       filter by type or tag, and switch between different visualizations.
       <a href="docs/FAQ.html" style="color: #40916c; text-decoration: none; border-bottom: 1px solid rgba(64, 145, 108, 0.5);">Learn more in the FAQ</a>.
@@ -32,8 +32,10 @@
 
   <!-- Controls -->
   <div class="controls-section">
-    <!-- Search -->
-    <div class="search-box">
+    <!-- Main Controls Row (Search, Reset, Viz Selector) -->
+    <div class="main-controls-row">
+      <!-- Search -->
+      <div class="search-box">
       <input
         type="text"
         class="search-input"
@@ -75,8 +77,17 @@
         </button>
       </div>
     </div>
+    </div><!-- End main-controls-row -->
 
-    <!-- Type Filter -->
+    <!-- Filters Row -->
+    <div class="filters-row">
+      <button class="filters-toggle" id="filtersToggle">
+        <span class="filters-toggle-icon" id="filtersToggleIcon">▼</span>
+        <span>Filters</span>
+      </button>
+
+      <div class="filters-container" id="filtersContainer">
+        <!-- Type Filter -->
     <div class="selector">
       <button class="selector-btn" id="typeSelector">
         <span class="selector-label">Type:</span>
@@ -127,7 +138,9 @@
         <!-- Will be populated dynamically -->
       </div>
     </div>
-  </div>
+      </div><!-- End filters-container -->
+    </div><!-- End filters-row -->
+  </div><!-- End controls-section -->
 
   <!-- Visualization -->
   <div class="viz-area">
@@ -171,6 +184,31 @@
   <div class="side-panel" id="sidePanel">
     <!-- Content will be dynamically inserted here -->
   </div>
+
+  <!-- UI Enhancement Script -->
+  <script>
+    // Auto-hide description after 10 seconds
+    setTimeout(() => {
+      const description = document.getElementById('siteDescription');
+      if (description) {
+        description.style.maxHeight = '0';
+        description.style.opacity = '0';
+        description.style.marginBottom = '0';
+      }
+    }, 10000);
+
+    // Toggle filters
+    const filtersToggle = document.getElementById('filtersToggle');
+    const filtersContainer = document.getElementById('filtersContainer');
+    const filtersToggleIcon = document.getElementById('filtersToggleIcon');
+
+    if (filtersToggle && filtersContainer && filtersToggleIcon) {
+      filtersToggle.addEventListener('click', () => {
+        filtersContainer.classList.toggle('collapsed');
+        filtersToggleIcon.classList.toggle('rotated');
+      });
+    }
+  </script>
 
   <!-- Main Application Script -->
   <script type="module" src="js/main.js"></script>

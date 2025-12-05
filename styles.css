@@ -55,20 +55,86 @@ body {
   line-height: 1.5;
   opacity: 0.7;
   padding: 0 20px;
+  max-height: 100px;
+  overflow: hidden;
+  transition: max-height 0.5s ease, opacity 0.5s ease, margin-bottom 0.5s ease;
 }
 
 /* Controls section */
 .controls-section {
   padding: 15px;
+  background: rgba(10, 31, 26, 0.3);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Main Controls Row - Search, Reset, Viz Selector */
+.main-controls-row {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  background: rgba(10, 31, 26, 0.3);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 12px;
+}
+
+/* Filters Row - Toggle + Filters */
+.filters-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Filters Toggle Button */
+.filters-toggle {
+  padding: 8px 16px;
+  background: rgba(64, 145, 108, 0.15);
+  border: 1px solid rgba(64, 145, 108, 0.3);
+  border-radius: 20px;
+  color: rgba(144, 224, 239, 0.85);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filters-toggle:hover {
+  background: rgba(64, 145, 108, 0.25);
+  border-color: rgba(64, 145, 108, 0.5);
+  color: rgba(144, 224, 239, 1);
+}
+
+.filters-toggle-icon {
+  transition: transform 0.3s;
+  display: inline-block;
+  font-size: 10px;
+}
+
+.filters-toggle-icon.rotated {
+  transform: rotate(-180deg);
+}
+
+/* Filters Container */
+.filters-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-height: 200px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.4s ease, opacity 0.4s ease;
+}
+
+.filters-container.collapsed {
+  max-height: 0;
+  opacity: 0;
 }
 
 .search-box {
