@@ -572,12 +572,21 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     zoomToNode(root);
   };
 
-  // Add event listener for reset
-  window.addEventListener('resetVisualization', resetHandler);
+  // Listen for up event from global up button
+  const upHandler = () => {
+    if (focus.parent) {
+      zoomToNode(focus.parent);
+    }
+  };
 
-  // Clean up event listener on window resize (when visualization is re-rendered)
-  const cleanupResetHandler = () => {
+  // Add event listeners
+  window.addEventListener('resetVisualization', resetHandler);
+  window.addEventListener('goUpLevel', upHandler);
+
+  // Clean up event listeners on window resize (when visualization is re-rendered)
+  const cleanupHandlers = () => {
     window.removeEventListener('resetVisualization', resetHandler);
+    window.removeEventListener('goUpLevel', upHandler);
   };
 
   // Zoom/focus function - actually zoom/transform arcs

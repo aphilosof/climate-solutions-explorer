@@ -162,9 +162,12 @@ function renderVisualization() {
       break;
   }
 
-  // Show the home button after rendering visualization
+  // Show the home and up buttons after rendering visualization
   if (window.showHomeButton) {
     window.showHomeButton();
+  }
+  if (window.showUpButton) {
+    window.showUpButton();
   }
 
   updateSearchInfo(filteredData);

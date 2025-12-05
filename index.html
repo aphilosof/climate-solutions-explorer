@@ -40,6 +40,11 @@
     <span class="home-icon">⌂</span>
   </button>
 
+  <!-- Floating Up Button (go to parent level) -->
+  <button class="up-toggle" id="upToggle" aria-label="Go up one level" style="display: none;">
+    <span class="up-icon">↑</span>
+  </button>
+
   <!-- Floating Sidebar -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -298,6 +303,28 @@
     window.hideHomeButton = function() {
       if (homeToggle) {
         homeToggle.style.display = 'none';
+      }
+    };
+
+    // Up button functionality (go to parent level)
+    const upToggle = document.getElementById('upToggle');
+    if (upToggle) {
+      upToggle.addEventListener('click', () => {
+        // Dispatch custom event that visualizations can listen to
+        window.dispatchEvent(new CustomEvent('goUpLevel'));
+      });
+    }
+
+    // Show/hide up button based on visualization changes
+    window.showUpButton = function() {
+      if (upToggle) {
+        upToggle.style.display = 'flex';
+      }
+    };
+
+    window.hideUpButton = function() {
+      if (upToggle) {
+        upToggle.style.display = 'none';
       }
     };
   </script>

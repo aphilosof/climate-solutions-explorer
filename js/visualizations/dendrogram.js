@@ -846,12 +846,30 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
     update(root);
   };
 
-  // Add event listener for reset
-  window.addEventListener('resetVisualization', resetHandler);
+  // Listen for up event from global up button
+  // For dendrogram, collapse all expanded nodes (similar to reset)
+  const upHandler = () => {
+    // Collapse all nodes back to initial state
+    root.descendants().forEach(d => {
+      d._hiddenBySiblingSelection = false;
+      if (d.depth >= 1) {
+        if (d._children || d.children) {
+          d._children = d._children || d.children;
+          d.children = null;
+        }
+      }
+    });
+    update(root);
+  };
 
-  // Clean up event listener on window resize (when visualization is re-rendered)
-  const cleanupResetHandler = () => {
+  // Add event listeners
+  window.addEventListener('resetVisualization', resetHandler);
+  window.addEventListener('goUpLevel', upHandler);
+
+  // Clean up event listeners on window resize (when visualization is re-rendered)
+  const cleanupHandlers = () => {
     window.removeEventListener('resetVisualization', resetHandler);
+    window.removeEventListener('goUpLevel', upHandler);
   };
 
   // Handle window resize - updates like circlePacking

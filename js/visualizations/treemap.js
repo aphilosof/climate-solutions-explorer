@@ -620,12 +620,23 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
     render(root);
   };
 
-  // Add event listener for reset
-  window.addEventListener('resetVisualization', resetHandler);
+  // Listen for up event from global up button
+  const upHandler = () => {
+    // Go back using navigation stack
+    if (navigationStack.length > 0) {
+      const previousRoot = navigationStack.pop();
+      drillDown(previousRoot, true);  // true = isBackNavigation
+    }
+  };
 
-  // Clean up event listener on window resize (when visualization is re-rendered)
-  const cleanupResetHandler = () => {
+  // Add event listeners
+  window.addEventListener('resetVisualization', resetHandler);
+  window.addEventListener('goUpLevel', upHandler);
+
+  // Clean up event listeners on window resize (when visualization is re-rendered)
+  const cleanupHandlers = () => {
     window.removeEventListener('resetVisualization', resetHandler);
+    window.removeEventListener('goUpLevel', upHandler);
   };
 
   // Handle window resize with debounce
