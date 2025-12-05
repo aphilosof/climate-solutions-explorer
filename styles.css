@@ -695,6 +695,30 @@ body {
     max-height: 800px;
   }
 
+  /* Move floating buttons down on mobile to avoid header overlap */
+  .sidebar-toggle {
+    top: 100px;
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+
+  .home-toggle {
+    top: 100px;
+    left: 75px;
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+
+  .up-toggle {
+    top: 100px;
+    left: 130px;
+    width: 45px;
+    height: 45px;
+    font-size: 24px;
+  }
+
   /* Sidebar takes full width on mobile */
   .sidebar {
     left: -100%;
@@ -703,6 +727,36 @@ body {
 
   .sidebar.open {
     left: 0;
+  }
+
+  /* Footer adjustments for mobile */
+  .footer {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 15px;
+    align-items: flex-start;
+  }
+
+  .footer-left {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+    font-size: 10px;
+  }
+
+  .footer-left a {
+    font-size: 10px;
+  }
+
+  .footer-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .export-btn {
+    padding: 6px 12px;
+    font-size: 10px;
   }
 }
 
@@ -923,13 +977,56 @@ body {
 
   .footer {
     flex-direction: column;
-    gap: 15px;
-    padding: 15px 20px;
+    gap: 10px;
+    padding: 12px 15px;
+    align-items: flex-start;
   }
 
   .footer-left {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
+    width: 100%;
+    font-size: 10px;
+  }
+
+  .footer-left span,
+  .footer-left a {
+    font-size: 10px;
+  }
+
+  .footer-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .export-btn {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  /* Adjust button positioning for smaller screens */
+  .sidebar-toggle {
+    top: 95px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .home-toggle {
+    top: 95px;
+    left: 70px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .up-toggle {
+    top: 95px;
+    left: 120px;
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
   }
 }
 
