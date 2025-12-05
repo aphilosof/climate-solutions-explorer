@@ -63,6 +63,7 @@
             id="searchInput"
             placeholder="Search climate solutions..."
           >
+          <div class="search-suggestions" id="searchSuggestions"></div>
           <div class="search-count" id="searchInfo">Loading...</div>
         </div>
       </div>
@@ -157,6 +158,21 @@
           <div class="dropdown" id="locationDropdown">
             <button class="dropdown-option active" data-location="all">All Locations</button>
             <!-- Will be populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="date-range-filter">
+          <label class="date-range-label">Date Range</label>
+          <div class="date-inputs">
+            <div class="date-input-group">
+              <label class="date-label">From:</label>
+              <input type="date" id="dateFrom" class="date-input">
+            </div>
+            <div class="date-input-group">
+              <label class="date-label">To:</label>
+              <input type="date" id="dateTo" class="date-input">
+            </div>
           </div>
         </div>
       </div>

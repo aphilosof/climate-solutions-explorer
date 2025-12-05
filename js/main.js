@@ -43,6 +43,8 @@ let currentType = 'all';
 let currentTag = 'all';
 let currentAuthor = 'all';
 let currentLocation = 'all';
+let currentDateFrom = '';
+let currentDateTo = '';
 let currentViz = 'sunburst';
 const allTypes = new Set();
 const allTags = new Set();
@@ -126,7 +128,7 @@ function renderVisualization() {
   // Clear previous visualization
   d3.select('#visualization').selectAll('*').remove();
 
-  const filteredData = getFilteredData(globalData, searchQuery, currentType, currentTag, currentAuthor, currentLocation, searchIndex);
+  const filteredData = getFilteredData(globalData, searchQuery, currentType, currentTag, currentAuthor, currentLocation, currentDateFrom, currentDateTo, searchIndex);
 
   if (!filteredData) {
     document.getElementById('visualization').innerHTML = `
@@ -246,9 +248,15 @@ function resetAllFilters() {
   currentTag = 'all';
   currentAuthor = 'all';
   currentLocation = 'all';
+  currentDateFrom = '';
+  currentDateTo = '';
 
   // Clear search input
   document.getElementById('searchInput').value = '';
+
+  // Clear date range inputs
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
 
   // Reset filter display values
   document.getElementById('typeValue').textContent = 'All';
@@ -308,6 +316,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Setup search
   document.getElementById('searchInput').addEventListener('input', (e) => {
     searchQuery = e.target.value.trim();
+    renderVisualization();
+  });
+
+  // Setup date range filters
+  document.getElementById('dateFrom').addEventListener('change', (e) => {
+    currentDateFrom = e.target.value;
+    renderVisualization();
+  });
+
+  document.getElementById('dateTo').addEventListener('change', (e) => {
+    currentDateTo = e.target.value;
     renderVisualization();
   });
 

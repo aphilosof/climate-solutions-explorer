@@ -293,7 +293,11 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
       .attr('width', d => d.x1 - d.x0)
       .attr('height', d => d.y1 - d.y0)
       .attr('fill', d => {
-        if (d.data.isSearchMatch) return '#ff4444';
+        // Check if node matches any filter (search, type, tag, author, location)
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
+        if (isMatch) return '#ff4444';
         // Use category-based colors for all nodes
         return getNodeColor(d, node);
       })
@@ -308,14 +312,22 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
         return 0.5; // Category nodes with children
       })
       .attr('stroke', d => {
-        if (d.data.isSearchMatch) return '#cc0000';
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
+        if (isMatch) return '#cc0000';
         // Depth-1 parent nodes get subtle semi-transparent borders
         const relativeDepth = d.depth - node.depth;
         if (relativeDepth === 1 && d.children) return 'rgba(255, 255, 255, 0.6)';
         return 'rgba(255, 255, 255, 0.2)';
       })
       .attr('stroke-width', d => {
-        if (d.data.isSearchMatch) return 2;
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
+        if (isMatch) return 2;
         // Depth-1 parent nodes get subtle borders (2px)
         const relativeDepth = d.depth - node.depth;
         if (relativeDepth === 1 && d.children) return 2;
@@ -387,6 +399,10 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
         }, 3000);
       })
       .on('mouseout', function(event, d) {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
         // Reset stroke based on node type
         const relativeDepth = d.depth - node.depth;
         const isDepth1Parent = relativeDepth === 1 && d.children;
@@ -394,8 +410,8 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
         const defaultStrokeWidth = isDepth1Parent ? 2 : 0.5;
 
         d3.select(this)
-          .attr('stroke', d.data.isSearchMatch ? '#cc0000' : defaultStroke)
-          .attr('stroke-width', d.data.isSearchMatch ? 2 : defaultStrokeWidth);
+          .attr('stroke', isMatch ? '#cc0000' : defaultStroke)
+          .attr('stroke-width', isMatch ? 2 : defaultStrokeWidth);
 
         // Only hide tooltip if not frozen
         if (!frozenTooltipNode) {

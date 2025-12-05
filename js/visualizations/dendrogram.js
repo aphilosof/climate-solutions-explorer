@@ -447,15 +447,19 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
         }, 3000);
       })
       .on('mouseout', function(event, d) {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
         // Remove stroke from circles
         d3.select(this).select('circle')
           .attr('stroke', d => {
-            if (d.data.isSearchMatch) return '#cc0000';
+            if (isMatch) return '#cc0000';
             if (d._children) return '#fff';
             return 'none';
           })
           .attr('stroke-width', d => {
-            if (d.data.isSearchMatch) return 2;
+            if (isMatch) return 2;
             if (d._children) return 3;
             return 0;
           });
@@ -612,12 +616,18 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
       .transition()
       .duration(750)
       .attr('r', d => {
-        if (d.data.isSearchMatch) return 6;
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return 6;
         const proportionalSize = calculateProportionalRadius(d);
         return proportionalSize * overlapPrevention;
       })
       .attr('fill', d => {
-        if (d.data.isSearchMatch) return '#ff4444';
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#ff4444';
         // Use category-based colors for all nodes
         return getNodeColor(d);
       })
@@ -632,12 +642,18 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
         return 0.5; // Category nodes with children
       })
       .attr('stroke', d => {
-        if (d.data.isSearchMatch) return '#cc0000';
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#cc0000';
         if (d._children) return '#fff';
         return 'none';
       })
       .attr('stroke-width', d => {
-        if (d.data.isSearchMatch) return 2;
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return 2;
         if (d._children) return 3;
         return 0;
       });
@@ -663,7 +679,10 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
         return -proportionalSize * overlapPrevention; // Center the square
       })
       .attr('fill', d => {
-        if (d.data.isSearchMatch) return '#ff4444';
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#ff4444';
         // Use category-based colors for all nodes
         return getNodeColor(d);
       })
@@ -678,11 +697,17 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
         return 0.5; // Category nodes with children
       })
       .attr('stroke', d => {
-        if (d.data.isSearchMatch) return '#cc0000';
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#cc0000';
         return '#fff';
       })
       .attr('stroke-width', d => {
-        if (d.data.isSearchMatch) return 2;
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return 2;
         return 2;
       });
 

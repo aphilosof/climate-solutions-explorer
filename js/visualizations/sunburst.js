@@ -217,8 +217,13 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     .data(root.descendants().filter(d => d.depth > 0))
     .join('path')
     .attr('fill', d => {
-      // Highlight search matches in red
-      if (d.data.isSearchMatch) return '#ff4444';
+      // Check if node matches any filter (search, type, tag, author, location)
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
+      // Highlight matches in red
+      if (isMatch) return '#ff4444';
+
       // Use category-based colors for all nodes
       return getNodeColor(d);
     })
@@ -234,14 +239,22 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     })
     .attr('d', arc)
     .attr('stroke', d => {
+      // Check if node matches any filter
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
       // Cluster nodes get distinctive dashed border
       if (d.data._isCluster) return 'rgba(255, 255, 255, 0.5)';
-      return d.data.isSearchMatch ? '#cc0000' : 'rgba(255, 255, 255, 0.2)';
+      return isMatch ? '#cc0000' : 'rgba(255, 255, 255, 0.2)';
     })
     .attr('stroke-width', d => {
+      // Check if node matches any filter
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
       // Cluster nodes get thicker border
       if (d.data._isCluster) return 2;
-      return d.data.isSearchMatch ? 2 : 1;
+      return isMatch ? 2 : 1;
     })
     .attr('stroke-dasharray', d => d.data._isCluster ? '5,3' : null)
     .style('cursor', d => {
@@ -335,9 +348,13 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       }, 3000);
     })
     .on('mouseout', function(event, d) {
+      // Check if node matches any filter
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
       // Reset stroke
-      d3.select(this).attr('stroke', d.data.isSearchMatch ? '#cc0000' : 'rgba(255, 255, 255, 0.2)')
-        .attr('stroke-width', d.data.isSearchMatch ? 2 : 1);
+      d3.select(this).attr('stroke', isMatch ? '#cc0000' : 'rgba(255, 255, 255, 0.2)')
+        .attr('stroke-width', isMatch ? 2 : 1);
 
       // Only hide tooltip if not frozen
       if (!frozenTooltipNode) {

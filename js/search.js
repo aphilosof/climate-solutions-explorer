@@ -86,8 +86,8 @@ export function updateSearchInfo(filteredData) {
   document.getElementById('searchInfo').textContent = `${count.toLocaleString()} result${count !== 1 ? 's' : ''}`;
 }
 
-// Get filtered data based on search query, type, and tag
-export function getFilteredData(globalData, searchQuery, currentType, currentTag, currentAuthor, currentLocation, searchIndexInstance) {
+// Get filtered data based on search query, type, tag, author, location, and date range
+export function getFilteredData(globalData, searchQuery, currentType, currentTag, currentAuthor, currentLocation, dateFrom, dateTo, searchIndexInstance) {
   let data = globalData;
   let matchedNames = null;
 
@@ -132,9 +132,31 @@ export function getFilteredData(globalData, searchQuery, currentType, currentTag
     data = filterByLocation(data, currentLocation);
   }
 
+  // Apply date range filter
+  if (dateFrom || dateTo) {
+    data = filterByDateRange(data, dateFrom, dateTo);
+  }
+
   // Mark nodes for highlighting if search was performed
   if (matchedNames) {
     markSearchHighlightsByName(data, matchedNames);
+  }
+
+  // Mark nodes for filter highlighting
+  if (currentType !== 'all') {
+    markTypeMatches(data, currentType);
+  }
+  if (currentTag !== 'all') {
+    markTagMatches(data, currentTag);
+  }
+  if (currentAuthor !== 'all') {
+    markAuthorMatches(data, currentAuthor);
+  }
+  if (currentLocation !== 'all') {
+    markLocationMatches(data, currentLocation);
+  }
+  if (dateFrom || dateTo) {
+    markDateMatches(data, dateFrom, dateTo);
   }
 
   return data;
@@ -319,16 +341,33 @@ function handleNotSearch(queryText, searchIndexInstance) {
 }
 
 // Mark nodes that matched search for highlighting in visualizations (by name)
+// Returns true if this node or any descendant matched
 function markSearchHighlightsByName(node, matchedNames) {
-  if (!node) return;
+  if (!node) return false;
 
-  // Check if this node's name matched the search
-  node.isSearchMatch = matchedNames.has(node.name);
+  // Check if this node's name matched the search directly
+  const directMatch = matchedNames.has(node.name);
+  node.isSearchMatch = directMatch;
 
-  // Recursively mark children
+  // Recursively mark children and check if any descendants matched
+  let hasMatchedDescendants = false;
   if (node.children && Array.isArray(node.children)) {
-    node.children.forEach(child => markSearchHighlightsByName(child, matchedNames));
+    node.children.forEach(child => {
+      const childOrDescendantMatched = markSearchHighlightsByName(child, matchedNames);
+      if (childOrDescendantMatched) {
+        hasMatchedDescendants = true;
+      }
+    });
   }
+
+  // If any descendant matched, mark this node as having matched descendants
+  if (hasMatchedDescendants) {
+    node.hasMatchedDescendants = true;
+    // Also mark as search match so it gets highlighted (but we can distinguish in viz)
+    node.isSearchMatch = true;
+  }
+
+  return directMatch || hasMatchedDescendants;
 }
 
 // Filter by search results (by name instead of object reference)
@@ -360,6 +399,31 @@ function filterBySearchNames(node, matchedNames, depth = 0) {
   return null;
 }
 
+// Mark nodes that match type filter for highlighting
+// Returns true if this node or any descendant matched
+function markTypeMatches(node, type) {
+  if (!node) return false;
+
+  const directMatch = node.type === type;
+  node.isTypeMatch = directMatch;
+
+  let hasMatchedDescendants = false;
+  if (node.children && Array.isArray(node.children)) {
+    node.children.forEach(child => {
+      if (markTypeMatches(child, type)) {
+        hasMatchedDescendants = true;
+      }
+    });
+  }
+
+  if (hasMatchedDescendants) {
+    node.hasTypeMatchedDescendants = true;
+    node.isTypeMatch = true;
+  }
+
+  return directMatch || hasMatchedDescendants;
+}
+
 // Filter by type
 function filterByType(node, type) {
   const nodeMatches = node.type === type;
@@ -379,6 +443,31 @@ function filterByType(node, type) {
   return null;
 }
 
+// Mark nodes that match tag filter for highlighting
+// Returns true if this node or any descendant matched
+function markTagMatches(node, tag) {
+  if (!node) return false;
+
+  const directMatch = node.tags && node.tags.includes(tag);
+  node.isTagMatch = directMatch;
+
+  let hasMatchedDescendants = false;
+  if (node.children && Array.isArray(node.children)) {
+    node.children.forEach(child => {
+      if (markTagMatches(child, tag)) {
+        hasMatchedDescendants = true;
+      }
+    });
+  }
+
+  if (hasMatchedDescendants) {
+    node.hasTagMatchedDescendants = true;
+    node.isTagMatch = true;
+  }
+
+  return directMatch || hasMatchedDescendants;
+}
+
 // Filter by tag
 function filterByTag(node, tag) {
   const nodeMatches = node.tags && node.tags.includes(tag);
@@ -396,6 +485,35 @@ function filterByTag(node, tag) {
   }
 
   return null;
+}
+
+// Mark nodes that match author filter for highlighting
+// Returns true if this node or any descendant matched
+function markAuthorMatches(node, author) {
+  if (!node) return false;
+
+  const items = node.urls || node.content || node.items || [];
+  const directMatch = Array.isArray(items) && items.some(item => {
+    const itemAuthor = item.author || item.creator || item.source;
+    return itemAuthor === author;
+  });
+  node.isAuthorMatch = directMatch;
+
+  let hasMatchedDescendants = false;
+  if (node.children && Array.isArray(node.children)) {
+    node.children.forEach(child => {
+      if (markAuthorMatches(child, author)) {
+        hasMatchedDescendants = true;
+      }
+    });
+  }
+
+  if (hasMatchedDescendants) {
+    node.hasAuthorMatchedDescendants = true;
+    node.isAuthorMatch = true;
+  }
+
+  return directMatch || hasMatchedDescendants;
 }
 
 // Filter by author - check in content items
@@ -422,6 +540,35 @@ function filterByAuthor(node, author) {
   return null;
 }
 
+// Mark nodes that match location filter for highlighting
+// Returns true if this node or any descendant matched
+function markLocationMatches(node, location) {
+  if (!node) return false;
+
+  const items = node.urls || node.content || node.items || [];
+  const directMatch = Array.isArray(items) && items.some(item => {
+    const itemLocation = item.location || item.country || item.region;
+    return itemLocation === location;
+  });
+  node.isLocationMatch = directMatch;
+
+  let hasMatchedDescendants = false;
+  if (node.children && Array.isArray(node.children)) {
+    node.children.forEach(child => {
+      if (markLocationMatches(child, location)) {
+        hasMatchedDescendants = true;
+      }
+    });
+  }
+
+  if (hasMatchedDescendants) {
+    node.hasLocationMatchedDescendants = true;
+    node.isLocationMatch = true;
+  }
+
+  return directMatch || hasMatchedDescendants;
+}
+
 // Filter by location - check in content items
 function filterByLocation(node, location) {
   // Check if any content items match the location
@@ -434,6 +581,122 @@ function filterByLocation(node, location) {
   if (node.children) {
     const filteredChildren = node.children
       .map(child => filterByLocation(child, location))
+      .filter(child => child !== null);
+
+    if (nodeMatches || filteredChildren.length > 0) {
+      return { ...node, children: filteredChildren };
+    }
+  } else if (nodeMatches) {
+    return { ...node };
+  }
+
+  return null;
+}
+
+// ============================================================================
+// DATE FILTERING
+// ============================================================================
+
+/**
+ * Parse date string to Date object
+ * Handles various formats: YYYY-MM-DD, YYYY-MM, YYYY, ISO strings
+ */
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+
+  try {
+    // Handle various date formats
+    const str = String(dateStr).trim();
+
+    // ISO format or full date
+    if (str.match(/^\d{4}-\d{2}-\d{2}/)) {
+      return new Date(str);
+    }
+
+    // Year-month format (YYYY-MM)
+    if (str.match(/^\d{4}-\d{2}$/)) {
+      return new Date(str + '-01');
+    }
+
+    // Year only (YYYY)
+    if (str.match(/^\d{4}$/)) {
+      return new Date(str + '-01-01');
+    }
+
+    // Try to parse as-is
+    const date = new Date(str);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  } catch (e) {
+    // Invalid date
+  }
+
+  return null;
+}
+
+/**
+ * Mark nodes that match date range for highlighting
+ * Returns true if this node or any descendant matched
+ */
+function markDateMatches(node, dateFrom, dateTo) {
+  if (!node) return false;
+
+  const items = node.urls || node.content || node.items || [];
+  const directMatch = Array.isArray(items) && items.some(item => {
+    const itemDate = parseDate(item.date || item.published_date || item.publish_date);
+    if (!itemDate) return false;
+
+    // Check if date is within range
+    const fromDate = dateFrom ? parseDate(dateFrom) : null;
+    const toDate = dateTo ? parseDate(dateTo) : null;
+
+    if (fromDate && itemDate < fromDate) return false;
+    if (toDate && itemDate > toDate) return false;
+
+    return true;
+  });
+
+  node.isDateMatch = directMatch;
+
+  let hasMatchedDescendants = false;
+  if (node.children && Array.isArray(node.children)) {
+    node.children.forEach(child => {
+      if (markDateMatches(child, dateFrom, dateTo)) {
+        hasMatchedDescendants = true;
+      }
+    });
+  }
+
+  if (hasMatchedDescendants) {
+    node.hasDateMatchedDescendants = true;
+    node.isDateMatch = true;
+  }
+
+  return directMatch || hasMatchedDescendants;
+}
+
+/**
+ * Filter by date range - check content items
+ */
+function filterByDateRange(node, dateFrom, dateTo) {
+  const items = node.urls || node.content || node.items || [];
+  const nodeMatches = Array.isArray(items) && items.some(item => {
+    const itemDate = parseDate(item.date || item.published_date || item.publish_date);
+    if (!itemDate) return false;
+
+    const fromDate = dateFrom ? parseDate(dateFrom) : null;
+    const toDate = dateTo ? parseDate(dateTo) : null;
+
+    if (fromDate && itemDate < fromDate) return false;
+    if (toDate && itemDate > toDate) return false;
+
+    return true;
+  });
+
+  if (node.children) {
+    const filteredChildren = node.children
+      .map(child => filterByDateRange(child, dateFrom, dateTo))
       .filter(child => child !== null);
 
     if (nodeMatches || filteredChildren.length > 0) {

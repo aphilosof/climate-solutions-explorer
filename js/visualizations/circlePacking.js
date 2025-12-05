@@ -161,7 +161,10 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     .data(root.descendants())
     .join('circle')
     .attr('fill', d => {
-      if (d.data.isSearchMatch) return '#ff4444';
+      // Check if node matches any filter (search, type, tag, author, location)
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+      if (isMatch) return '#ff4444';
       // Use category-based colors for all nodes
       return getNodeColor(d);
     })
@@ -174,6 +177,18 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
         return 0.6; // Terminal nodes
       }
       return 0.5; // Category nodes with children
+    })
+    .attr('stroke', d => {
+      // Add stroke for matched nodes
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+      return isMatch ? '#cc0000' : null;
+    })
+    .attr('stroke-width', d => {
+      // Add stroke width for matched nodes
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+      return isMatch ? 2 : 0;
     })
     .style('opacity', d => d.depth === 0 ? 0 : 1)
     .attr('pointer-events', null)  // Enable pointer events for all
@@ -243,7 +258,13 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
       }, 3000);  // 3 seconds (shorter)
     })
     .on('mouseout', function(event, d) {
-      d3.select(this).attr('stroke', null);
+      // Check if node matches any filter
+      const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                      d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+      // Reset to match stroke (red) or no stroke
+      d3.select(this)
+        .attr('stroke', isMatch ? '#cc0000' : null)
+        .attr('stroke-width', isMatch ? 2 : 0);
 
       // Only hide tooltip if it's not frozen
       if (!frozenTooltipNode) {
