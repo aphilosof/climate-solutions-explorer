@@ -677,46 +677,55 @@ body {
 /* Responsive height adjustments */
 @media (max-width: 900px) {
   .header {
-    padding: 20px 15px 10px 15px;
+    padding: 15px 15px 8px 15px;
   }
 
   .site-title {
-    font-size: 24px;
-    margin-bottom: 10px;
+    font-size: 20px;
+    margin-bottom: 6px;
   }
 
   .site-description {
-    font-size: 13px;
-    margin-bottom: 10px;
+    font-size: 11px;
+    margin-bottom: 6px;
+    max-height: 40px;
   }
 
   #visualization {
-    height: calc(100vh - 180px);
-    max-height: 800px;
+    height: calc(100vh - 140px);
+    max-height: none;
+    min-height: 400px;
   }
 
-  /* Move floating buttons down on mobile to avoid header overlap */
+  /* Move floating buttons to bottom-right on mobile */
   .sidebar-toggle {
-    top: 100px;
-    width: 45px;
-    height: 45px;
-    font-size: 20px;
+    top: auto;
+    bottom: 80px;
+    left: auto;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
   }
 
   .home-toggle {
-    top: 100px;
-    left: 75px;
-    width: 45px;
-    height: 45px;
-    font-size: 20px;
+    top: auto;
+    bottom: 140px;
+    left: auto;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
   }
 
   .up-toggle {
-    top: 100px;
-    left: 130px;
-    width: 45px;
-    height: 45px;
-    font-size: 24px;
+    top: auto;
+    bottom: 200px;
+    left: auto;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 26px;
   }
 
   /* Sidebar takes full width on mobile */
@@ -1007,26 +1016,33 @@ body {
 
   /* Adjust button positioning for smaller screens */
   .sidebar-toggle {
-    top: 95px;
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
+    top: auto;
+    bottom: 75px;
+    left: auto;
+    right: 12px;
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
   }
 
   .home-toggle {
-    top: 95px;
-    left: 70px;
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
+    top: auto;
+    bottom: 133px;
+    left: auto;
+    right: 12px;
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
   }
 
   .up-toggle {
-    top: 95px;
-    left: 120px;
-    width: 40px;
-    height: 40px;
-    font-size: 22px;
+    top: auto;
+    bottom: 191px;
+    left: auto;
+    right: 12px;
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
   }
 }
 

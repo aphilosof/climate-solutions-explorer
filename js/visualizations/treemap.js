@@ -195,8 +195,10 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
       clusterNode.depth = parentNode.depth + 1;
       clusterNode.height = 0;
 
-      // Give cluster more weight so it's larger and more visible
-      clusterNode.value = terminalLeaves.length * 3; // 3x multiplier for visibility
+      // Set cluster value to match the combined value of terminal leaves
+      // Calculate total value from all terminal leaves
+      const totalValue = terminalLeaves.reduce((sum, leaf) => sum + (leaf.value || 1), 0);
+      clusterNode.value = totalValue;
 
       // Replace terminal leaves with single cluster node
       parentNode.children = [...categories, clusterNode];
