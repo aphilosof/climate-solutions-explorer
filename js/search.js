@@ -708,3 +708,133 @@ function filterByDateRange(node, dateFrom, dateTo) {
 
   return null;
 }
+
+// ============================================================================
+// SEARCH SUGGESTIONS
+// ============================================================================
+
+const RECENT_SEARCHES_KEY = 'climateSolutions_recentSearches';
+const MAX_RECENT_SEARCHES = 5;
+const MAX_SUGGESTIONS = 5;
+
+/**
+ * Get recent searches from localStorage
+ */
+export function getRecentSearches() {
+  try {
+    const recent = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return recent ? JSON.parse(recent) : [];
+  } catch (e) {
+    console.error('Error reading recent searches:', e);
+    return [];
+  }
+}
+
+/**
+ * Save a search query to recent searches
+ */
+export function saveRecentSearch(query) {
+  if (!query || query.trim().length === 0) return;
+
+  try {
+    let recent = getRecentSearches();
+
+    // Remove if already exists (to move to top)
+    recent = recent.filter(q => q.toLowerCase() !== query.toLowerCase());
+
+    // Add to beginning
+    recent.unshift(query.trim());
+
+    // Keep only MAX_RECENT_SEARCHES
+    recent = recent.slice(0, MAX_RECENT_SEARCHES);
+
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent));
+  } catch (e) {
+    console.error('Error saving recent search:', e);
+  }
+}
+
+/**
+ * Clear recent searches
+ */
+export function clearRecentSearches() {
+  try {
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
+  } catch (e) {
+    console.error('Error clearing recent searches:', e);
+  }
+}
+
+/**
+ * Collect all node names from hierarchy for suggestions
+ */
+function collectNodeNames(node, names = new Set()) {
+  if (!node) return names;
+
+  if (node.name) {
+    names.add(node.name);
+  }
+
+  if (node.children && Array.isArray(node.children)) {
+    node.children.forEach(child => collectNodeNames(child, names));
+  }
+
+  return names;
+}
+
+/**
+ * Get search suggestions based on current input
+ * Returns object with { recent: [], matching: [] }
+ */
+export function getSearchSuggestions(query, data) {
+  const suggestions = {
+    recent: [],
+    matching: []
+  };
+
+  // If no query, show recent searches only
+  if (!query || query.trim().length === 0) {
+    suggestions.recent = getRecentSearches();
+    return suggestions;
+  }
+
+  const queryLower = query.trim().toLowerCase();
+
+  // Get recent searches that match current query
+  const recent = getRecentSearches();
+  suggestions.recent = recent.filter(r =>
+    r.toLowerCase().includes(queryLower)
+  ).slice(0, 3);  // Max 3 recent
+
+  // Get matching node names
+  const allNames = collectNodeNames(data);
+  const matchingNames = Array.from(allNames)
+    .filter(name => name.toLowerCase().includes(queryLower))
+    .sort((a, b) => {
+      // Prioritize matches that start with query
+      const aStarts = a.toLowerCase().startsWith(queryLower);
+      const bStarts = b.toLowerCase().startsWith(queryLower);
+
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+
+      // Then sort by length (shorter first)
+      return a.length - b.length;
+    })
+    .slice(0, MAX_SUGGESTIONS);
+
+  suggestions.matching = matchingNames;
+
+  return suggestions;
+}
+
+/**
+ * Highlight matching text in suggestion
+ */
+export function highlightMatch(text, query) {
+  if (!query) return text;
+
+  const regex = new RegExp(`(${query})`, 'gi');
+  return text.replace(regex, '<strong>$1</strong>');
+}
+

@@ -27,7 +27,11 @@ import {
 import {
   initializeSearch,
   updateSearchInfo,
-  getFilteredData
+  getFilteredData,
+  getSearchSuggestions,
+  saveRecentSearch,
+  highlightMatch,
+  clearRecentSearches
 } from './search.js';
 
 import { renderCirclePacking } from './visualizations/circlePacking.js';
@@ -50,6 +54,10 @@ const allTypes = new Set();
 const allTags = new Set();
 const allAuthors = new Set();
 const allLocations = new Set();
+
+// Search suggestions state
+let selectedSuggestionIndex = -1;
+let currentSuggestions = { recent: [], matching: [] };
 
 // Tooltip and side panel references
 const tooltip = d3.select('#tooltip');
@@ -89,6 +97,126 @@ window.closeSidePanel = () => {
 window.downloadPanelItems = (items, nodeName) => {
   downloadItemsAsTSV(items, nodeName);
 };
+
+// Search suggestions functions
+function renderSearchSuggestions(suggestions) {
+  const suggestionsContainer = document.getElementById('searchSuggestions');
+
+  if (!suggestions || (suggestions.recent.length === 0 && suggestions.matching.length === 0)) {
+    suggestionsContainer.classList.remove('active');
+    suggestionsContainer.innerHTML = '';
+    selectedSuggestionIndex = -1;
+    return;
+  }
+
+  let html = '';
+
+  // Recent searches section
+  if (suggestions.recent.length > 0) {
+    html += '<div class="suggestion-section">';
+    html += '<div class="suggestion-label">Recent Searches</div>';
+    suggestions.recent.forEach((query, index) => {
+      const isSelected = index === selectedSuggestionIndex;
+      html += `<div class="suggestion-item ${isSelected ? 'selected' : ''}" data-type="recent" data-query="${query}">`;
+      html += '<span class="suggestion-icon">🕐</span>';
+      html += `<span class="suggestion-text">${query}</span>`;
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Matching suggestions section
+  if (suggestions.matching.length > 0) {
+    const offset = suggestions.recent.length;
+    html += '<div class="suggestion-section">';
+    html += '<div class="suggestion-label">Suggestions</div>';
+    suggestions.matching.forEach((nodeName, index) => {
+      const isSelected = (offset + index) === selectedSuggestionIndex;
+      const searchInput = document.getElementById('searchInput');
+      const query = searchInput ? searchInput.value.trim() : '';
+      const highlightedText = highlightMatch(nodeName, query);
+      html += `<div class="suggestion-item ${isSelected ? 'selected' : ''}" data-type="match" data-query="${nodeName}">`;
+      html += '<span class="suggestion-icon">🔍</span>';
+      html += `<span class="suggestion-text">${highlightedText}</span>`;
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  suggestionsContainer.innerHTML = html;
+  suggestionsContainer.classList.add('active');
+
+  // Add click handlers to suggestion items
+  suggestionsContainer.querySelectorAll('.suggestion-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectSuggestion(item.dataset.query);
+    });
+  });
+}
+
+function hideSearchSuggestions() {
+  const suggestionsContainer = document.getElementById('searchSuggestions');
+  suggestionsContainer.classList.remove('active');
+  suggestionsContainer.innerHTML = '';
+  selectedSuggestionIndex = -1;
+}
+
+function selectSuggestion(query) {
+  const searchInput = document.getElementById('searchInput');
+  searchInput.value = query;
+  searchQuery = query;
+
+  // Save to recent searches
+  saveRecentSearch(query);
+
+  // Hide suggestions
+  hideSearchSuggestions();
+
+  // Trigger search
+  renderVisualization();
+}
+
+function handleSuggestionKeyboard(e) {
+  const suggestionsContainer = document.getElementById('searchSuggestions');
+  const isActive = suggestionsContainer.classList.contains('active');
+
+  if (!isActive) return;
+
+  const totalSuggestions = currentSuggestions.recent.length + currentSuggestions.matching.length;
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault();
+      selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, totalSuggestions - 1);
+      renderSearchSuggestions(currentSuggestions);
+      break;
+
+    case 'ArrowUp':
+      e.preventDefault();
+      selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+      renderSearchSuggestions(currentSuggestions);
+      break;
+
+    case 'Enter':
+      if (selectedSuggestionIndex >= 0) {
+        e.preventDefault();
+        const allSuggestions = [...currentSuggestions.recent, ...currentSuggestions.matching];
+        const selectedQuery = allSuggestions[selectedSuggestionIndex];
+        selectSuggestion(selectedQuery);
+      } else {
+        // Save search when Enter is pressed without selection
+        saveRecentSearch(searchQuery);
+        hideSearchSuggestions();
+      }
+      break;
+
+    case 'Escape':
+      e.preventDefault();
+      hideSearchSuggestions();
+      break;
+  }
+}
 
 // Load and initialize data
 async function loadData() {
@@ -313,10 +441,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Setup search
-  document.getElementById('searchInput').addEventListener('input', (e) => {
+  // Setup search with suggestions
+  const searchInput = document.getElementById('searchInput');
+
+  searchInput.addEventListener('input', (e) => {
     searchQuery = e.target.value.trim();
-    renderVisualization();
+
+    // Get and render suggestions
+    if (globalData) {
+      currentSuggestions = getSearchSuggestions(searchQuery, globalData);
+      renderSearchSuggestions(currentSuggestions);
+    }
+
+    // Only re-render visualization if user has typed something or cleared the search
+    if (searchQuery.length > 0 || e.target.value === '') {
+      renderVisualization();
+    }
+  });
+
+  // Handle keyboard navigation for suggestions
+  searchInput.addEventListener('keydown', handleSuggestionKeyboard);
+
+  // Show recent searches when search input is focused
+  searchInput.addEventListener('focus', () => {
+    if (globalData && searchInput.value.trim().length === 0) {
+      currentSuggestions = getSearchSuggestions('', globalData);
+      renderSearchSuggestions(currentSuggestions);
+    }
+  });
+
+  // Hide suggestions when clicking outside
+  document.addEventListener('click', (e) => {
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+      hideSearchSuggestions();
+    }
   });
 
   // Setup date range filters
