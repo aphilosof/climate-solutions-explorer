@@ -681,33 +681,6 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
 
       treemap(newRoot);
       render(newRoot);
-
-      // Update zoom controls position
-      const isMobileResize = width < 768;
-      const controls = d3.select('.treemap-zoom-controls');
-      if (isMobileResize) {
-        controls
-          .style('left', '50%')
-          .style('right', null)
-          .style('bottom', '5px')
-          .style('top', null)
-          .style('transform', 'translateX(-50%)')
-          .style('flex-direction', 'row')
-          .style('background', 'rgba(0, 0, 0, 0.3)')
-          .style('padding', '6px')
-          .style('border-radius', '8px');
-      } else {
-        controls
-          .style('left', '20px')
-          .style('right', null)
-          .style('top', '50%')
-          .style('bottom', null)
-          .style('transform', 'translateY(-50%)')
-          .style('flex-direction', 'column')
-          .style('background', null)
-          .style('padding', null)
-          .style('border-radius', null);
-      }
     }, 150); // Debounce 150ms
   });
 
