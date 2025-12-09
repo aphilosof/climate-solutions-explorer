@@ -607,3 +607,187 @@ export function downloadItemsAsTSV(items, nodeName) {
   a.download = 'CD_Solution_map_2_content.tsv';
   a.click();
 }
+
+// Export current visualization as SVG
+export function exportVisualizationAsSVG(filters = {}) {
+  const svg = document.querySelector('#visualization svg');
+
+  if (!svg) {
+    alert('No visualization found to export');
+    return;
+  }
+
+  // Clone the SVG to avoid modifying the original
+  const clonedSvg = svg.cloneNode(true);
+
+  // Get computed styles and add them inline
+  const styleSheets = document.styleSheets;
+  let cssText = '';
+
+  // Extract relevant CSS rules
+  for (let i = 0; i < styleSheets.length; i++) {
+    try {
+      const rules = styleSheets[i].cssRules || styleSheets[i].rules;
+      if (rules) {
+        for (let j = 0; j < rules.length; j++) {
+          const rule = rules[j];
+          if (rule.selectorText && (
+            rule.selectorText.includes('svg') ||
+            rule.selectorText.includes('path') ||
+            rule.selectorText.includes('circle') ||
+            rule.selectorText.includes('text') ||
+            rule.selectorText.includes('line') ||
+            rule.selectorText.includes('rect')
+          )) {
+            cssText += rule.cssText + '\n';
+          }
+        }
+      }
+    } catch (e) {
+      // Skip stylesheets that can't be accessed (CORS)
+      console.warn('Could not access stylesheet:', e);
+    }
+  }
+
+  // Add styles to SVG
+  const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  styleElement.textContent = cssText;
+  clonedSvg.insertBefore(styleElement, clonedSvg.firstChild);
+
+  // Serialize SVG to string
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(clonedSvg);
+
+  // Add XML declaration
+  const svgBlob = new Blob(
+    ['<?xml version="1.0" encoding="UTF-8"?>\n' + svgString],
+    { type: 'image/svg+xml;charset=utf-8' }
+  );
+
+  // Download
+  const url = URL.createObjectURL(svgBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = generateExportFilename('svg', filters);
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Export current visualization as PNG
+export function exportVisualizationAsPNG(filters = {}) {
+  const svg = document.querySelector('#visualization svg');
+
+  if (!svg) {
+    alert('No visualization found to export');
+    return;
+  }
+
+  // Hide tooltip and side panel before export
+  const tooltip = document.getElementById('tooltip');
+  const sidePanel = document.getElementById('sidePanel');
+  const originalTooltipDisplay = tooltip ? tooltip.style.display : '';
+  const originalSidePanelDisplay = sidePanel ? sidePanel.style.display : '';
+
+  if (tooltip) tooltip.style.display = 'none';
+  if (sidePanel) sidePanel.style.display = 'none';
+
+  // Clone the SVG to avoid modifying the original
+  const clonedSvg = svg.cloneNode(true);
+
+  // Get SVG dimensions
+  const bbox = svg.getBoundingClientRect();
+  const width = bbox.width;
+  const height = bbox.height;
+
+  // Get computed styles and add them inline
+  const styleSheets = document.styleSheets;
+  let cssText = '';
+
+  // Extract relevant CSS rules
+  for (let i = 0; i < styleSheets.length; i++) {
+    try {
+      const rules = styleSheets[i].cssRules || styleSheets[i].rules;
+      if (rules) {
+        for (let j = 0; j < rules.length; j++) {
+          const rule = rules[j];
+          if (rule.selectorText && (
+            rule.selectorText.includes('svg') ||
+            rule.selectorText.includes('path') ||
+            rule.selectorText.includes('circle') ||
+            rule.selectorText.includes('text') ||
+            rule.selectorText.includes('line') ||
+            rule.selectorText.includes('rect')
+          )) {
+            cssText += rule.cssText + '\n';
+          }
+        }
+      }
+    } catch (e) {
+      // Skip stylesheets that can't be accessed (CORS)
+      console.warn('Could not access stylesheet:', e);
+    }
+  }
+
+  // Add styles to SVG
+  const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  styleElement.textContent = cssText;
+  clonedSvg.insertBefore(styleElement, clonedSvg.firstChild);
+
+  // Set explicit width and height on cloned SVG
+  clonedSvg.setAttribute('width', width);
+  clonedSvg.setAttribute('height', height);
+
+  // Serialize SVG to string
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(clonedSvg);
+
+  // Create image from SVG
+  const img = new Image();
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Set canvas size (2x for higher resolution)
+  const scale = 2;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+
+  // Scale context for high DPI
+  ctx.scale(scale, scale);
+
+  // Fill white background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  img.onload = function() {
+    // Draw image onto canvas
+    ctx.drawImage(img, 0, 0, width, height);
+
+    // Restore tooltip and side panel display
+    if (tooltip) tooltip.style.display = originalTooltipDisplay;
+    if (sidePanel) sidePanel.style.display = originalSidePanelDisplay;
+
+    // Convert canvas to blob and download
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = generateExportFilename('png', filters);
+      a.click();
+      URL.revokeObjectURL(url);
+    }, 'image/png', 1.0);
+  };
+
+  img.onerror = function(error) {
+    // Restore tooltip and side panel display
+    if (tooltip) tooltip.style.display = originalTooltipDisplay;
+    if (sidePanel) sidePanel.style.display = originalSidePanelDisplay;
+
+    console.error('Error loading SVG image:', error);
+    alert('Failed to export PNG. Please try SVG export instead.');
+  };
+
+  // Create data URL from SVG string
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  img.src = url;
+}

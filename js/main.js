@@ -18,6 +18,8 @@ import {
   closeAllDropdowns,
   downloadJSON,
   downloadCSV,
+  exportVisualizationAsSVG,
+  exportVisualizationAsPNG,
   showSidePanel,
   hideSidePanel,
   hasManyItems,
@@ -549,6 +551,36 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     downloadCSV(filteredData || globalData, filters);
+  });
+
+  // Setup SVG export button
+  document.getElementById('exportSVG').addEventListener('click', () => {
+    const filters = {
+      search: searchQuery,
+      type: currentType,
+      tag: currentTag,
+      author: currentAuthor,
+      location: currentLocation,
+      dateFrom: currentDateFrom,
+      dateTo: currentDateTo
+    };
+
+    exportVisualizationAsSVG(filters);
+  });
+
+  // Setup PNG export button
+  document.getElementById('exportPNG').addEventListener('click', () => {
+    const filters = {
+      search: searchQuery,
+      type: currentType,
+      tag: currentTag,
+      author: currentAuthor,
+      location: currentLocation,
+      dateFrom: currentDateFrom,
+      dateTo: currentDateTo
+    };
+
+    exportVisualizationAsPNG(filters);
   });
 
   // Close dropdowns when clicking outside

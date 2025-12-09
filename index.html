@@ -9,6 +9,7 @@
   <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
   <script src="https://unpkg.com/compromise-dates@latest/builds/compromise-dates.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 </head>
 <body>
@@ -176,6 +177,29 @@
           </div>
         </div>
       </div>
+
+      <!-- Export Section -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">Export</label>
+        <div class="export-buttons-grid">
+          <button class="export-btn sidebar-export-btn" id="exportJSON">
+            <span>📄</span>
+            <span>JSON</span>
+          </button>
+          <button class="export-btn sidebar-export-btn" id="exportCSV">
+            <span>📊</span>
+            <span>CSV</span>
+          </button>
+          <button class="export-btn sidebar-export-btn" id="exportSVG">
+            <span>🖼️</span>
+            <span>SVG</span>
+          </button>
+          <button class="export-btn sidebar-export-btn" id="exportPNG">
+            <span>📷</span>
+            <span>PNG</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -201,16 +225,6 @@
         ⭐ GitHub
       </a>
       <a href="https://forms.gle/uNyqmvkd6XGxRq38A">💡Suggest an entry</a>
-    </div>
-    <div class="footer-right">
-      <button class="export-btn" id="exportJSON">
-        <span>📄</span>
-        <span>JSON</span>
-      </button>
-      <button class="export-btn" id="exportCSV">
-        <span>📊</span>
-        <span>CSV</span>
-      </button>
     </div>
   </div>
 
