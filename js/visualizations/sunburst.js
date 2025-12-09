@@ -523,7 +523,7 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
           .style('left', (event.pageX + 5) + 'px')
           .style('top', (event.pageY - 35) + 'px')
           .html(`
-            <div style="font-weight: bold; margin-bottom: 4px;">Climate Solution</div>
+            <div style="font-weight: bold; margin-bottom: 4px;">Climate Solutions</div>
             <div style="font-size: 12px; color: #666;">
               📋 ${items.length} root solution${items.length === 1 ? '' : 's'} - Click to view list
             </div>

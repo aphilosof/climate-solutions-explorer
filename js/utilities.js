@@ -490,24 +490,96 @@ export function flattenHierarchy(node, parent = null, result = []) {
   return result;
 }
 
-// Download data as JSON
-export function downloadJSON(data) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+// Generate filename with filter info
+export function generateExportFilename(extension, filters = {}) {
+  const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const parts = ['climate-solutions'];
+
+  // Add filter info to filename
+  if (filters.search && filters.search.trim()) {
+    parts.push(`search-${filters.search.replace(/[^a-z0-9]/gi, '-').substring(0, 20)}`);
+  }
+  if (filters.type && filters.type !== 'all') {
+    parts.push(`type-${filters.type.replace(/[^a-z0-9]/gi, '-')}`);
+  }
+  if (filters.tag && filters.tag !== 'all') {
+    parts.push(`tag-${filters.tag.replace(/[^a-z0-9]/gi, '-')}`);
+  }
+  if (filters.author && filters.author !== 'all') {
+    parts.push(`author-${filters.author.replace(/[^a-z0-9]/gi, '-').substring(0, 20)}`);
+  }
+  if (filters.location && filters.location !== 'all') {
+    parts.push(`location-${filters.location.replace(/[^a-z0-9]/gi, '-')}`);
+  }
+  if (filters.dateFrom || filters.dateTo) {
+    const dateRange = `${filters.dateFrom || 'start'}-to-${filters.dateTo || 'end'}`;
+    parts.push(dateRange);
+  }
+
+  parts.push(timestamp);
+
+  return `${parts.join('_')}.${extension}`;
+}
+
+// Download data as JSON with metadata
+export function downloadJSON(data, filters = {}) {
+  // Count total nodes
+  const nodeCount = countNodes(data);
+
+  // Create export object with metadata
+  const exportData = {
+    metadata: {
+      exportDate: new Date().toISOString(),
+      totalNodes: nodeCount,
+      filters: {
+        search: filters.search || '',
+        type: filters.type || 'all',
+        tag: filters.tag || 'all',
+        author: filters.author || 'all',
+        location: filters.location || 'all',
+        dateFrom: filters.dateFrom || '',
+        dateTo: filters.dateTo || ''
+      }
+    },
+    data: data
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'climate-solutions-data.json';
+  a.download = generateExportFilename('json', filters);
   a.click();
   URL.revokeObjectURL(url);
 }
 
-// Download data as CSV
-export function downloadCSV(data) {
+// Download data as CSV (deduplicated, no metadata comments)
+export function downloadCSV(data, filters = {}) {
   const flatData = flattenHierarchy(data);
-  const headers = Object.keys(flatData[0]);
+
+  if (flatData.length === 0) {
+    alert('No data to export');
+    return;
+  }
+
+  // Deduplicate entries based on URL (or name+url if no URL)
+  const uniqueData = [];
+  const seen = new Set();
+
+  flatData.forEach(row => {
+    // Create unique key: use URL if available, otherwise name+parent combination
+    const uniqueKey = row.url ? row.url : `${row.name}|${row.parent}`;
+
+    if (!seen.has(uniqueKey)) {
+      seen.add(uniqueKey);
+      uniqueData.push(row);
+    }
+  });
+
+  const headers = Object.keys(uniqueData[0]);
   const csvContent = [
     headers.join(','),
-    ...flatData.map(row =>
+    ...uniqueData.map(row =>
       headers.map(header => {
         const value = row[header] || '';
         return `"${String(value).replace(/"/g, '""')}"`;
@@ -519,7 +591,7 @@ export function downloadCSV(data) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'climate-solutions-data.csv';
+  a.download = generateExportFilename('csv', filters);
   a.click();
   URL.revokeObjectURL(url);
 }

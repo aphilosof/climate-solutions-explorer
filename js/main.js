@@ -494,13 +494,61 @@ document.addEventListener('DOMContentLoaded', () => {
     resetAllFilters();
   });
 
-  // Setup export buttons
+  // Setup export buttons - export FILTERED data
   document.getElementById('exportJSON').addEventListener('click', () => {
-    downloadJSON(globalData);
+    // Get current filtered data
+    const filteredData = getFilteredData(
+      globalData,
+      searchQuery,
+      currentType,
+      currentTag,
+      currentAuthor,
+      currentLocation,
+      currentDateFrom,
+      currentDateTo,
+      searchIndex
+    );
+
+    // Pass filter metadata
+    const filters = {
+      search: searchQuery,
+      type: currentType,
+      tag: currentTag,
+      author: currentAuthor,
+      location: currentLocation,
+      dateFrom: currentDateFrom,
+      dateTo: currentDateTo
+    };
+
+    downloadJSON(filteredData || globalData, filters);
   });
 
   document.getElementById('exportCSV').addEventListener('click', () => {
-    downloadCSV(globalData);
+    // Get current filtered data
+    const filteredData = getFilteredData(
+      globalData,
+      searchQuery,
+      currentType,
+      currentTag,
+      currentAuthor,
+      currentLocation,
+      currentDateFrom,
+      currentDateTo,
+      searchIndex
+    );
+
+    // Pass filter metadata
+    const filters = {
+      search: searchQuery,
+      type: currentType,
+      tag: currentTag,
+      author: currentAuthor,
+      location: currentLocation,
+      dateFrom: currentDateFrom,
+      dateTo: currentDateTo
+    };
+
+    downloadCSV(filteredData || globalData, filters);
   });
 
   // Close dropdowns when clicking outside
