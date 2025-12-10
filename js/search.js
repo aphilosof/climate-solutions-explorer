@@ -93,11 +93,15 @@ export function getFilteredData(globalData, searchQuery, currentType, currentTag
 
   // Apply search
   if (searchQuery) {
+    // Parse advanced search operators
+    const parsedQuery = parseAdvancedSearchQuery(searchQuery);
+    console.log('Parsed query:', parsedQuery);
+
     let results;
 
-    // Check if query contains boolean operators
-    if (containsBooleanOperators(searchQuery)) {
-      results = executeBooleanSearch(searchQuery, searchIndexInstance);
+    // Check if query contains boolean operators or advanced syntax
+    if (parsedQuery.hasAdvancedSyntax || containsBooleanOperators(searchQuery)) {
+      results = executeAdvancedSearch(parsedQuery, searchIndexInstance, globalData);
     } else {
       // Use searchSingleTerm for consistent behavior with combineWith: 'AND'
       results = searchSingleTerm(searchQuery, searchIndexInstance);
@@ -160,6 +164,301 @@ export function getFilteredData(globalData, searchQuery, currentType, currentTag
   }
 
   return data;
+}
+
+// ============================================================================
+// ADVANCED SEARCH OPERATORS
+// ============================================================================
+
+/**
+ * Parse advanced search query
+ * Supports:
+ * - Quotes for exact match: "solar power"
+ * - Wildcard: solar* (not implemented in MiniSearch, but we can prefix search)
+ * - Exclude with minus: -wind
+ * - Field-specific: author:ClimateDrift, type:article, tag:renewable, date:2023
+ */
+function parseAdvancedSearchQuery(query) {
+  const parsed = {
+    terms: [],          // Regular search terms
+    exactPhrases: [],   // "quoted phrases"
+    excludeTerms: [],   // -excluded
+    fieldSearches: {},  // field:value pairs
+    hasAdvancedSyntax: false,
+    originalQuery: query
+  };
+
+  if (!query) return parsed;
+
+  // Extract field-specific searches (author:, type:, tag:, date:)
+  const fieldPattern = /(author|type|tag|date):([^\s]+)/gi;
+  let match;
+  let remainingQuery = query;
+
+  while ((match = fieldPattern.exec(query)) !== null) {
+    const field = match[1].toLowerCase();
+    const value = match[2];
+
+    if (!parsed.fieldSearches[field]) {
+      parsed.fieldSearches[field] = [];
+    }
+    parsed.fieldSearches[field].push(value);
+    parsed.hasAdvancedSyntax = true;
+
+    // Remove from remaining query
+    remainingQuery = remainingQuery.replace(match[0], '');
+  }
+
+  // Extract exact phrases (quoted text)
+  const phrasePattern = /"([^"]+)"/g;
+  while ((match = phrasePattern.exec(remainingQuery)) !== null) {
+    parsed.exactPhrases.push(match[1]);
+    parsed.hasAdvancedSyntax = true;
+    // Remove from remaining query
+    remainingQuery = remainingQuery.replace(match[0], '');
+  }
+
+  // Extract exclude terms (words starting with -)
+  const excludePattern = /\s-(\w+)/g;
+  while ((match = excludePattern.exec(remainingQuery)) !== null) {
+    parsed.excludeTerms.push(match[1]);
+    parsed.hasAdvancedSyntax = true;
+    // Remove from remaining query
+    remainingQuery = remainingQuery.replace(match[0], '');
+  }
+
+  // Handle exclude at start of query
+  if (remainingQuery.trim().startsWith('-')) {
+    const excludeMatch = remainingQuery.match(/^-(\w+)/);
+    if (excludeMatch) {
+      parsed.excludeTerms.push(excludeMatch[1]);
+      parsed.hasAdvancedSyntax = true;
+      remainingQuery = remainingQuery.replace(excludeMatch[0], '');
+    }
+  }
+
+  // Remaining terms are regular search terms
+  const terms = remainingQuery
+    .trim()
+    .split(/\s+/)
+    .filter(t => t && t.length > 0 && !t.match(/^(AND|OR|NOT)$/i));
+
+  if (terms.length > 0) {
+    parsed.terms = terms;
+  }
+
+  return parsed;
+}
+
+/**
+ * Execute advanced search with parsed query
+ */
+function executeAdvancedSearch(parsedQuery, searchIndexInstance, globalData) {
+  let results = [];
+
+  // Start with field-specific searches
+  if (Object.keys(parsedQuery.fieldSearches).length > 0) {
+    results = executeFieldSearch(parsedQuery.fieldSearches, searchIndexInstance, globalData);
+  }
+
+  // Add results from regular terms
+  if (parsedQuery.terms.length > 0) {
+    const termQuery = parsedQuery.terms.join(' ');
+    let termResults;
+
+    if (containsBooleanOperators(termQuery)) {
+      termResults = executeBooleanSearch(termQuery, searchIndexInstance);
+    } else {
+      termResults = searchSingleTerm(termQuery, searchIndexInstance);
+    }
+
+    if (results.length === 0) {
+      results = termResults;
+    } else {
+      // Intersect with existing results
+      const resultIds = new Set(results.map(r => r.id));
+      termResults = termResults.filter(r => resultIds.has(r.id));
+      results = termResults;
+    }
+  }
+
+  // Add results from exact phrases
+  if (parsedQuery.exactPhrases.length > 0) {
+    parsedQuery.exactPhrases.forEach(phrase => {
+      const phraseResults = searchIndexInstance.search(phrase, {
+        prefix: false,
+        fuzzy: 0.1,
+        combineWith: 'AND'
+      });
+
+      if (results.length === 0) {
+        results = phraseResults;
+      } else {
+        // Intersect with existing results
+        const resultIds = new Set(results.map(r => r.id));
+        results = results.filter(r => {
+          const phraseIds = new Set(phraseResults.map(pr => pr.id));
+          return phraseIds.has(r.id);
+        });
+      }
+    });
+  }
+
+  // If no positive terms, start with all results
+  if (results.length === 0 && parsedQuery.excludeTerms.length > 0) {
+    results = searchIndexInstance.search('', { prefix: true });
+  }
+
+  // Apply exclusions
+  if (parsedQuery.excludeTerms.length > 0) {
+    parsedQuery.excludeTerms.forEach(term => {
+      const excludeResults = searchSingleTerm(term, searchIndexInstance);
+      const excludeIds = new Set(excludeResults.map(r => r.id));
+      results = results.filter(r => !excludeIds.has(r.id));
+    });
+  }
+
+  console.log(`Advanced search returned ${results.length} results`);
+  return results;
+}
+
+/**
+ * Execute field-specific searches
+ */
+function executeFieldSearch(fieldSearches, searchIndexInstance, globalData) {
+  let results = [];
+
+  // Handle each field type
+  Object.keys(fieldSearches).forEach((field, index) => {
+    const values = fieldSearches[field];
+    let fieldResults = [];
+
+    values.forEach(value => {
+      let partialResults = [];
+
+      switch (field) {
+        case 'author':
+          // Search in author field
+          partialResults = searchIndexInstance.search(value, {
+            fields: ['content_text'],  // Authors are in content_text
+            prefix: true,
+            fuzzy: 0.2
+          });
+          break;
+
+        case 'type':
+          // Search in type field
+          partialResults = searchIndexInstance.search(value, {
+            fields: ['type'],
+            prefix: true,
+            fuzzy: 0.2
+          });
+          break;
+
+        case 'tag':
+          // Search in tags field
+          partialResults = searchIndexInstance.search(value, {
+            fields: ['tags'],
+            prefix: true,
+            fuzzy: 0.2
+          });
+          break;
+
+        case 'date':
+          // Handle date searches (date:2023, date:2023-2024)
+          partialResults = searchByDateOperator(value, searchIndexInstance, globalData);
+          break;
+
+        default:
+          // Generic field search
+          partialResults = searchIndexInstance.search(value, {
+            prefix: true,
+            fuzzy: 0.2
+          });
+      }
+
+      // Union results from same field
+      fieldResults = unionResults(fieldResults, partialResults);
+    });
+
+    // Intersect results from different fields
+    if (index === 0) {
+      results = fieldResults;
+    } else {
+      results = intersectResults(results, fieldResults);
+    }
+  });
+
+  return results;
+}
+
+/**
+ * Search by date operator (date:2023, date:2023-2024)
+ */
+function searchByDateOperator(value, searchIndexInstance, globalData) {
+  // Parse date range from value
+  let fromDate, toDate;
+
+  if (value.includes('-') && value.length > 4) {
+    // Range like 2023-2024
+    const parts = value.split('-');
+    fromDate = parts[0];
+    toDate = parts[1];
+  } else {
+    // Single year like 2023
+    fromDate = value;
+    toDate = value;
+  }
+
+  // Get all documents and filter by date
+  const allDocs = searchIndexInstance.search('', { prefix: true });
+
+  return allDocs.filter(doc => {
+    const node = doc.node;
+    if (!node) return false;
+
+    const items = node.urls || node.content || node.items || [];
+    return Array.isArray(items) && items.some(item => {
+      const itemDateStr = item.date || item.published_date || item.publish_date;
+      if (!itemDateStr) return false;
+
+      const itemDate = parseDate(itemDateStr);
+      if (!itemDate) return false;
+
+      const year = itemDate.getFullYear().toString();
+      const fromYear = fromDate ? parseInt(fromDate) : null;
+      const toYear = toDate ? parseInt(toDate) : null;
+
+      if (fromYear && parseInt(year) < fromYear) return false;
+      if (toYear && parseInt(year) > toYear) return false;
+
+      return true;
+    });
+  });
+}
+
+/**
+ * Union two result sets (OR operation)
+ */
+function unionResults(results1, results2) {
+  const map = new Map();
+
+  results1.forEach(r => map.set(r.id, r));
+  results2.forEach(r => {
+    if (!map.has(r.id) || map.get(r.id).score < r.score) {
+      map.set(r.id, r);
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Intersect two result sets (AND operation)
+ */
+function intersectResults(results1, results2) {
+  const ids2 = new Set(results2.map(r => r.id));
+  return results1.filter(r => ids2.has(r.id));
 }
 
 // Check if query contains boolean operators

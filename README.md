@@ -13,16 +13,22 @@ A platform for exploring climate solutions data through interactive visualizatio
 - **Sunburst**: Radial charts with concentric rings and smooth transitions
 
 ### 🔍 Advanced Search & Filtering
-- **Natural Language Search**: Query using plain English (e.g., "renewable energy solutions from 2020")
-- **Intelligent Parsing**: Extracts entities, dates, organizations, and boolean operators
-- **Real-time Suggestions**: Auto-complete based on indexed content
-- **Multi-category Filters**: Filter by type, author, or tags
-- **Visual Highlighting**: Search results highlighted in red with non-matches dimmed
+- **Boolean Operators**: Use AND, OR, NOT for complex queries
+- **Exact Phrase Matching**: Quote terms for precise matches ("solar power")
+- **Exclude Terms**: Use minus (-) to exclude results (renewable -fossil)
+- **Field-Specific Search**: Target specific fields (author:, type:, tag:, date:)
+- **Date Range Queries**: Search by year or range (date:2023 or date:2023-2024)
+- **Real-time Suggestions**: Auto-complete with recent searches and matching items
+- **Multi-category Filters**: Filter by type, author, location, tags, and date range
+- **Visual Highlighting**: Search results highlighted with non-matches dimmed
+- **Search Within Results**: Combine filters with advanced operators for precision
 
 ### 🎯 Interactive Features
 - **Smart Tooltips**: Hover for preview, click for persistent detailed information
+- **Favorites/Bookmarks**: Save solutions with ⭐ button, export as JSON
 - **Zoom & Pan**: Navigate through data hierarchies seamlessly
 - **Color Coding**: Multiple color schemes including focus-based themes
+- **Export Options**: Download filtered data as JSON/CSV or visualizations as SVG/PNG
 - **Responsive Design**: Works on desktop and tablet devices
 
 ## 🚀 Quick Start
@@ -178,14 +184,99 @@ Quick summary:
 4. **Filter**: Use dropdown filters to focus on specific types, authors, or tags
 5. **Navigate**: Use visualization-specific controls for zooming, expanding, or drilling down
 
-### Search Examples
+### Advanced Search Guide
+
+The search system supports powerful operators for precise queries. Click the "⚙️ Advanced Search" button in the sidebar to see all operators and examples.
+
+#### Search Operators
+
+**Exact Phrase Match**
 ```
-renewable energy solutions
-solar power innovations  
-carbon capture by Microsoft
-energy efficiency measures from 2020
-sustainable transportation OR green buildings
+"solar power"          → Only results with exact phrase "solar power"
+"carbon capture"       → Exact match for "carbon capture"
 ```
+
+**Exclude Terms**
+```
+renewable -fossil      → Renewable energy but exclude fossil fuel mentions
+solar -expensive       → Solar solutions excluding expensive ones
+-wind                  → Everything except wind-related content
+```
+
+**Boolean Operators**
+```
+solar AND wind         → Results must contain both terms
+solar OR wind          → Results with either term
+solar NOT fossil       → Solar results excluding fossil
+```
+
+**Field-Specific Search**
+```
+author:ClimateDrift    → Search only in author field
+type:article           → Filter by content type
+tag:renewable          → Search by tag
+date:2023              → Find content from 2023
+date:2023-2024         → Date range search
+```
+
+**Complex Queries**
+```
+"solar power" author:ClimateDrift              → Exact phrase by specific author
+renewable -fossil type:article                 → Renewable articles excluding fossil
+wind OR solar date:2023                        → Wind or solar from 2023
+"carbon capture" tag:technology -expensive     → Carbon capture tech, not expensive
+author:Tesla type:innovation date:2023-2024    → Tesla innovations from 2023-2024
+```
+
+#### Search Tips
+
+1. **Combine operators** for precise results:
+   - `"climate solutions" author:MIT -fossil date:2023`
+
+2. **Use quotes** for multi-word exact matches:
+   - `"renewable energy"` vs `renewable energy`
+
+3. **Field-specific searches** work with filters:
+   - Apply a Type filter, then use `author:ClimateDrift` to further narrow
+
+4. **Date searches** complement date range filters:
+   - Use `date:2023` in search OR the date range filter in sidebar
+
+5. **Exclude terms** to refine results:
+   - Start broad, then add exclusions: `energy -nuclear -fossil`
+
+#### Search Suggestions
+
+- **Recent Searches**: Press focus on search box (click or tab) to see recent queries
+- **Auto-complete**: Start typing to see matching solution names
+- **Keyboard Navigation**: Use arrow keys ↑↓ to navigate suggestions, Enter to select
+
+### Favorites & Bookmarks
+
+Save important solutions for later reference:
+
+1. **Add to Favorites**: Click a solution to open the side panel, then click the ⭐ button
+2. **View Favorites**: Open sidebar (☰ menu) → "My Favorites" section
+3. **Manage Favorites**:
+   - Click on any favorite to view details
+   - Click "Remove" to delete individual favorites
+   - Click "Export Favorites" to download as JSON
+   - Click "Clear All" to remove all favorites
+4. **Favorites Storage**: Saved in browser localStorage (persists across sessions)
+
+### Export Options
+
+Export your filtered data or visualizations:
+
+**Data Export** (from sidebar):
+- **JSON**: Download filtered data in JSON format
+- **CSV**: Download filtered data as CSV spreadsheet
+
+**Visualization Export** (from sidebar):
+- **SVG**: Export current visualization as scalable vector graphic
+- **PNG**: Export current visualization as high-resolution image (2x resolution)
+
+All exports include active filter information in the filename for easy reference.
 
 ### Keyboard Shortcuts
 - **Shift + Click**: Navigate/zoom without showing tooltip

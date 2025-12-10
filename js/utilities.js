@@ -144,15 +144,25 @@ export function showSidePanel(sidePanel, d) {
     return; // Don't show panel if no items
   }
 
-  // Store items in global variables for download function
+  // Store items and node data in global variables
   window._currentPanelItems = items;
   window._currentPanelName = name;
+  window._currentNodeData = d.data;
+  window._currentNodeId = d.data?.name || name; // Use name as ID
+
+  // Check if this node is favorited
+  const favorited = isFavorite(window._currentNodeId);
+  const starIcon = favorited ? '⭐' : '☆';
+  const starTitle = favorited ? 'Remove from favorites' : 'Add to favorites';
 
   // Build panel content
   let contentHtml = `
     <div class="side-panel-header">
       <h3>${name}</h3>
       <div class="side-panel-actions">
+        <button class="favorite-btn" id="sidePanelFavoriteBtn" onclick="window.togglePanelFavorite()" title="${starTitle}">
+          <span id="favoriteIcon">${starIcon}</span>
+        </button>
         <button class="download-btn" onclick="window.downloadPanelItems(window._currentPanelItems, window._currentPanelName)" title="Download as TSV">
           <span>📥</span>
           <span>Download TSV</span>
@@ -790,4 +800,114 @@ export function exportVisualizationAsPNG(filters = {}) {
   const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
   img.src = url;
+}
+
+// ==================== FAVORITES MANAGEMENT ====================
+
+const FAVORITES_KEY = 'climate-solutions-favorites';
+
+// Add a node to favorites
+export function addFavorite(nodeId, nodeData) {
+  const favorites = getFavorites();
+
+  // Check if already favorited
+  if (favorites.some(fav => fav.id === nodeId)) {
+    return false; // Already in favorites
+  }
+
+  // Create favorite entry
+  const favorite = {
+    id: nodeId,
+    name: nodeData.name,
+    path: getNodePath(nodeData),
+    timestamp: new Date().toISOString(),
+    data: nodeData // Store full node data for later use
+  };
+
+  favorites.push(favorite);
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+
+  // Dispatch event to update UI
+  window.dispatchEvent(new CustomEvent('favoritesChanged'));
+
+  return true;
+}
+
+// Remove a node from favorites
+export function removeFavorite(nodeId) {
+  const favorites = getFavorites();
+  const filtered = favorites.filter(fav => fav.id !== nodeId);
+
+  if (filtered.length === favorites.length) {
+    return false; // Not in favorites
+  }
+
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(filtered));
+
+  // Dispatch event to update UI
+  window.dispatchEvent(new CustomEvent('favoritesChanged'));
+
+  return true;
+}
+
+// Get all favorites
+export function getFavorites() {
+  try {
+    const stored = localStorage.getItem(FAVORITES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    console.error('Error reading favorites:', e);
+    return [];
+  }
+}
+
+// Check if a node is favorited
+export function isFavorite(nodeId) {
+  const favorites = getFavorites();
+  return favorites.some(fav => fav.id === nodeId);
+}
+
+// Clear all favorites
+export function clearFavorites() {
+  localStorage.removeItem(FAVORITES_KEY);
+  window.dispatchEvent(new CustomEvent('favoritesChanged'));
+}
+
+// Export favorites as JSON
+export function exportFavorites() {
+  const favorites = getFavorites();
+
+  if (favorites.length === 0) {
+    alert('No favorites to export');
+    return;
+  }
+
+  const exportData = {
+    exportDate: new Date().toISOString(),
+    totalFavorites: favorites.length,
+    favorites: favorites
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `climate-solutions-favorites-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Helper function to get node path
+function getNodePath(nodeData) {
+  const pathParts = [];
+  let current = nodeData;
+
+  while (current) {
+    if (current.name) {
+      pathParts.unshift(current.name);
+    }
+    current = current.parent;
+  }
+
+  return pathParts.join(' > ');
 }

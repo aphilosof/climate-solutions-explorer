@@ -23,7 +23,13 @@ import {
   showSidePanel,
   hideSidePanel,
   hasManyItems,
-  downloadItemsAsTSV
+  downloadItemsAsTSV,
+  addFavorite,
+  removeFavorite,
+  getFavorites,
+  isFavorite,
+  clearFavorites,
+  exportFavorites
 } from './utilities.js';
 
 import {
@@ -98,6 +104,81 @@ window.closeSidePanel = () => {
 // Global download function for side panel TSV export
 window.downloadPanelItems = (items, nodeName) => {
   downloadItemsAsTSV(items, nodeName);
+};
+
+// Global toggle favorite function for side panel
+window.togglePanelFavorite = () => {
+  const nodeId = window._currentNodeId;
+  const nodeData = window._currentNodeData;
+
+  if (!nodeId || !nodeData) return;
+
+  const favorited = isFavorite(nodeId);
+
+  if (favorited) {
+    removeFavorite(nodeId);
+  } else {
+    addFavorite(nodeId, nodeData);
+  }
+
+  // Update button
+  const favoriteIcon = document.getElementById('favoriteIcon');
+  const favoriteBtn = document.getElementById('sidePanelFavoriteBtn');
+
+  if (favoriteIcon && favoriteBtn) {
+    const newFavorited = isFavorite(nodeId);
+    favoriteIcon.textContent = newFavorited ? '⭐' : '☆';
+    favoriteBtn.title = newFavorited ? 'Remove from favorites' : 'Add to favorites';
+  }
+};
+
+// Render favorites list
+function renderFavoritesList() {
+  const favorites = getFavorites();
+  const container = document.getElementById('favoritesContainer');
+  const count = document.getElementById('favoritesCount');
+  const exportBtn = document.getElementById('exportFavoritesBtn');
+  const clearBtn = document.getElementById('clearFavoritesBtn');
+
+  // Update count
+  count.textContent = favorites.length;
+
+  // Show/hide action buttons
+  if (favorites.length > 0) {
+    exportBtn.style.display = 'flex';
+    clearBtn.style.display = 'flex';
+  } else {
+    exportBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+  }
+
+  // Render favorites
+  if (favorites.length === 0) {
+    container.innerHTML = '<div class="favorites-empty">No favorites yet. Click the ⭐ button when viewing a solution to add it to your favorites.</div>';
+    return;
+  }
+
+  let html = '';
+  favorites.forEach(fav => {
+    html += `
+      <div class="favorite-item" data-fav-id="${fav.id}">
+        <div class="favorite-item-name">${fav.name}</div>
+        <div class="favorite-item-path">${fav.path}</div>
+        <div class="favorite-item-actions">
+          <button class="favorite-item-remove" onclick="window.removeFavoriteItem('${fav.id}')" title="Remove from favorites">Remove</button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// Global function to remove favorite item
+window.removeFavoriteItem = (nodeId) => {
+  if (confirm('Remove this item from favorites?')) {
+    removeFavorite(nodeId);
+  }
 };
 
 // Search suggestions functions
@@ -480,6 +561,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Setup advanced search panel
+  const advancedSearchToggle = document.getElementById('advancedSearchToggle');
+  const advancedSearchPanel = document.getElementById('advancedSearchPanel');
+
+  advancedSearchToggle.addEventListener('click', () => {
+    const isVisible = advancedSearchPanel.style.display !== 'none';
+
+    if (isVisible) {
+      advancedSearchPanel.style.display = 'none';
+      advancedSearchToggle.classList.remove('active');
+    } else {
+      advancedSearchPanel.style.display = 'block';
+      advancedSearchToggle.classList.add('active');
+    }
+  });
+
+  // Setup example queries
+  document.querySelectorAll('.search-example').forEach(example => {
+    example.addEventListener('click', () => {
+      const query = example.getAttribute('data-query');
+      searchInput.value = query;
+      searchQuery = query;
+
+      // Hide advanced panel
+      advancedSearchPanel.style.display = 'none';
+      advancedSearchToggle.classList.remove('active');
+
+      // Trigger search
+      renderVisualization();
+    });
+  });
+
   // Setup date range filters
   document.getElementById('dateFrom').addEventListener('change', (e) => {
     currentDateFrom = e.target.value;
@@ -593,6 +706,27 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeTimeout = setTimeout(() => {
       renderVisualization();
     }, 250);
+  });
+
+  // Setup favorites functionality
+  // Render favorites list on page load
+  renderFavoritesList();
+
+  // Listen for favorites changes
+  window.addEventListener('favoritesChanged', () => {
+    renderFavoritesList();
+  });
+
+  // Export favorites button
+  document.getElementById('exportFavoritesBtn').addEventListener('click', () => {
+    exportFavorites();
+  });
+
+  // Clear favorites button
+  document.getElementById('clearFavoritesBtn').addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear all favorites? This cannot be undone.')) {
+      clearFavorites();
+    }
   });
 
   // Load data

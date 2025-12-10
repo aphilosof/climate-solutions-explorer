@@ -67,6 +67,66 @@
           <div class="search-suggestions" id="searchSuggestions"></div>
           <div class="search-count" id="searchInfo">Loading...</div>
         </div>
+
+        <!-- Advanced Search Toggle -->
+        <button class="advanced-search-toggle" id="advancedSearchToggle">
+          <span class="toggle-icon">⚙️</span>
+          <span class="toggle-text">Advanced Search</span>
+          <span class="toggle-arrow">▼</span>
+        </button>
+
+        <!-- Advanced Search Panel -->
+        <div class="advanced-search-panel" id="advancedSearchPanel" style="display: none;">
+          <div class="advanced-search-header">
+            <h4>Search Operators</h4>
+          </div>
+          <div class="advanced-search-content">
+            <div class="search-help-item">
+              <code>"exact phrase"</code>
+              <span class="help-description">Search for exact phrase</span>
+            </div>
+            <div class="search-help-item">
+              <code>-exclude</code>
+              <span class="help-description">Exclude results containing term</span>
+            </div>
+            <div class="search-help-item">
+              <code>solar AND wind</code>
+              <span class="help-description">Results must contain both terms</span>
+            </div>
+            <div class="search-help-item">
+              <code>solar OR wind</code>
+              <span class="help-description">Results with either term</span>
+            </div>
+            <div class="search-help-item">
+              <code>author:ClimateDrift</code>
+              <span class="help-description">Search by author</span>
+            </div>
+            <div class="search-help-item">
+              <code>type:article</code>
+              <span class="help-description">Search by type</span>
+            </div>
+            <div class="search-help-item">
+              <code>tag:renewable</code>
+              <span class="help-description">Search by tag</span>
+            </div>
+            <div class="search-help-item">
+              <code>date:2023</code>
+              <span class="help-description">Search by year or range (2023-2024)</span>
+            </div>
+          </div>
+          <div class="advanced-search-examples">
+            <h4>Examples</h4>
+            <div class="search-example" data-query='"solar power" author:ClimateDrift'>
+              "solar power" author:ClimateDrift
+            </div>
+            <div class="search-example" data-query='renewable -fossil type:article'>
+              renewable -fossil type:article
+            </div>
+            <div class="search-example" data-query='wind OR solar date:2023'>
+              wind OR solar date:2023
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Reset Filters Button -->
@@ -175,6 +235,24 @@
               <input type="date" id="dateTo" class="date-input">
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- My Favorites Section -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">My Favorites (<span id="favoritesCount">0</span>)</label>
+        <div id="favoritesContainer" class="favorites-container">
+          <div class="favorites-empty">No favorites yet. Click the ⭐ button when viewing a solution to add it to your favorites.</div>
+        </div>
+        <div class="favorites-actions">
+          <button class="favorites-action-btn" id="exportFavoritesBtn" title="Export favorites as JSON" style="display: none;">
+            <span>📤</span>
+            <span>Export Favorites</span>
+          </button>
+          <button class="favorites-action-btn" id="clearFavoritesBtn" title="Clear all favorites" style="display: none;">
+            <span>🗑️</span>
+            <span>Clear All</span>
+          </button>
         </div>
       </div>
 
