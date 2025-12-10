@@ -1385,6 +1385,32 @@ body {
   align-items: center;
 }
 
+/* Favorite button in side panel header */
+.side-panel-header .favorite-btn {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: rgba(255, 215, 0, 0.8);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.side-panel-header .favorite-btn:hover {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: rgba(255, 215, 0, 0.5);
+  transform: scale(1.1);
+}
+
+.side-panel-header .favorite-btn:active {
+  transform: scale(1.05);
+}
+
 .side-panel-header .download-btn {
   background: rgba(64, 145, 108, 0.15);
   border: 1px solid rgba(64, 145, 108, 0.4);

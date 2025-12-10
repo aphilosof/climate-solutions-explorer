@@ -67,6 +67,228 @@ const allLocations = new Set();
 let selectedSuggestionIndex = -1;
 let currentSuggestions = { recent: [], matching: [] };
 
+// URL state management flag
+let isApplyingURLState = false;
+
+// ============================================================================
+// URL DEEP LINKING
+// ============================================================================
+
+/**
+ * Update URL hash with current application state
+ * Format: #viz=sunburst&search=query&type=article&tag=renewable...
+ */
+function updateURL() {
+  // Don't update URL if we're currently applying URL state (prevents loops)
+  if (isApplyingURLState) return;
+
+  const params = new URLSearchParams();
+
+  // Add visualization type
+  if (currentViz && currentViz !== 'sunburst') {
+    params.set('viz', currentViz);
+  }
+
+  // Add search query
+  if (searchQuery && searchQuery.trim()) {
+    params.set('search', searchQuery.trim());
+  }
+
+  // Add filters
+  if (currentType && currentType !== 'all') {
+    params.set('type', currentType);
+  }
+  if (currentTag && currentTag !== 'all') {
+    params.set('tag', currentTag);
+  }
+  if (currentAuthor && currentAuthor !== 'all') {
+    params.set('author', currentAuthor);
+  }
+  if (currentLocation && currentLocation !== 'all') {
+    params.set('location', currentLocation);
+  }
+
+  // Add date range
+  if (currentDateFrom) {
+    params.set('dateFrom', currentDateFrom);
+  }
+  if (currentDateTo) {
+    params.set('dateTo', currentDateTo);
+  }
+
+  // Update URL hash
+  const hash = params.toString();
+  if (hash) {
+    history.replaceState(null, '', `#${hash}`);
+  } else {
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
+/**
+ * Parse URL hash and return state object
+ * @returns {Object} Parsed state from URL
+ */
+function parseURL() {
+  const hash = window.location.hash.substring(1); // Remove #
+  if (!hash) return null;
+
+  const params = new URLSearchParams(hash);
+  const state = {};
+
+  // Parse visualization type
+  if (params.has('viz')) {
+    state.viz = params.get('viz');
+  }
+
+  // Parse search query
+  if (params.has('search')) {
+    state.search = params.get('search');
+  }
+
+  // Parse filters
+  if (params.has('type')) {
+    state.type = params.get('type');
+  }
+  if (params.has('tag')) {
+    state.tag = params.get('tag');
+  }
+  if (params.has('author')) {
+    state.author = params.get('author');
+  }
+  if (params.has('location')) {
+    state.location = params.get('location');
+  }
+
+  // Parse date range
+  if (params.has('dateFrom')) {
+    state.dateFrom = params.get('dateFrom');
+  }
+  if (params.has('dateTo')) {
+    state.dateTo = params.get('dateTo');
+  }
+
+  return Object.keys(state).length > 0 ? state : null;
+}
+
+/**
+ * Apply URL state to the application
+ * @param {Object} state - Parsed URL state
+ */
+function applyURLState(state) {
+  if (!state) return;
+
+  isApplyingURLState = true;
+
+  try {
+    // Apply visualization type
+    if (state.viz) {
+      currentViz = state.viz;
+
+      // Update UI
+      const vizButtons = document.querySelectorAll('[data-viz]');
+      vizButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.viz === state.viz);
+      });
+
+      // Update selector display
+      const vizValue = document.getElementById('vizValue');
+      const activeBtn = document.querySelector(`[data-viz="${state.viz}"]`);
+      if (vizValue && activeBtn) {
+        vizValue.textContent = activeBtn.dataset.name;
+      }
+    }
+
+    // Apply search query
+    if (state.search) {
+      searchQuery = state.search;
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.value = state.search;
+      }
+    }
+
+    // Apply type filter
+    if (state.type) {
+      currentType = state.type;
+      const typeValue = document.getElementById('typeValue');
+      if (typeValue) {
+        typeValue.textContent = state.type === 'all' ? 'All' : state.type;
+      }
+      // Update dropdown active state
+      const typeButtons = document.querySelectorAll('#typeDropdown [data-type]');
+      typeButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === state.type);
+      });
+    }
+
+    // Apply tag filter
+    if (state.tag) {
+      currentTag = state.tag;
+      const tagValue = document.getElementById('tagValue');
+      if (tagValue) {
+        tagValue.textContent = state.tag === 'all' ? 'All' : state.tag;
+      }
+      // Update dropdown active state
+      const tagButtons = document.querySelectorAll('#tagDropdown [data-tag]');
+      tagButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tag === state.tag);
+      });
+    }
+
+    // Apply author filter
+    if (state.author) {
+      currentAuthor = state.author;
+      const authorValue = document.getElementById('authorValue');
+      if (authorValue) {
+        authorValue.textContent = state.author === 'all' ? 'All' : state.author;
+      }
+      // Update dropdown active state
+      const authorButtons = document.querySelectorAll('#authorDropdown [data-author]');
+      authorButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.author === state.author);
+      });
+    }
+
+    // Apply location filter
+    if (state.location) {
+      currentLocation = state.location;
+      const locationValue = document.getElementById('locationValue');
+      if (locationValue) {
+        locationValue.textContent = state.location === 'all' ? 'All' : state.location;
+      }
+      // Update dropdown active state
+      const locationButtons = document.querySelectorAll('#locationDropdown [data-location]');
+      locationButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.location === state.location);
+      });
+    }
+
+    // Apply date range
+    if (state.dateFrom) {
+      currentDateFrom = state.dateFrom;
+      const dateFromInput = document.getElementById('dateFrom');
+      if (dateFromInput) {
+        dateFromInput.value = state.dateFrom;
+      }
+    }
+    if (state.dateTo) {
+      currentDateTo = state.dateTo;
+      const dateToInput = document.getElementById('dateTo');
+      if (dateToInput) {
+        dateToInput.value = state.dateTo;
+      }
+    }
+
+    // Render visualization with applied state
+    renderVisualization();
+
+    console.log('Applied URL state:', state);
+  } finally {
+    isApplyingURLState = false;
+  }
+}
+
 // Tooltip and side panel references
 const tooltip = d3.select('#tooltip');
 const sidePanel = document.getElementById('sidePanel');
@@ -384,6 +606,9 @@ function renderVisualization() {
   }
 
   updateSearchInfo(filteredData);
+
+  // Update URL with current state (for deep linking)
+  updateURL();
 }
 
 // Handle home button click - simply re-render the visualization to reset state
@@ -729,6 +954,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Setup browser navigation (back/forward buttons)
+  window.addEventListener('popstate', () => {
+    console.log('Popstate event - restoring state from URL');
+    const urlState = parseURL();
+    if (urlState) {
+      applyURLState(urlState);
+    }
+  });
+
   // Load data
   loadData();
+
+  // Apply URL state after data is loaded (if URL has parameters)
+  // This will be called after loadData completes
+  const initialURLState = parseURL();
+  if (initialURLState) {
+    console.log('Initial URL state detected:', initialURLState);
+    // Wait for data to load before applying URL state
+    const checkDataLoaded = setInterval(() => {
+      if (globalData && searchIndex) {
+        clearInterval(checkDataLoaded);
+        applyURLState(initialURLState);
+      }
+    }, 100);
+  }
 });
