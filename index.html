@@ -284,6 +284,28 @@
   <!-- Sidebar Overlay (to close sidebar when clicking outside) -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+      <div class="spinner-circle"></div>
+      <div class="spinner-icon">🌍</div>
+    </div>
+    <div class="loading-text" id="loadingText">Loading...</div>
+  </div>
+
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb-nav" id="breadcrumbNav" style="display: none;">
+    <div class="breadcrumb-container">
+      <button class="breadcrumb-item breadcrumb-home" id="breadcrumbHome" title="Go to root">
+        <span class="breadcrumb-icon">🏠</span>
+        <span class="breadcrumb-text">Climate Solutions</span>
+      </button>
+      <div class="breadcrumb-trail" id="breadcrumbTrail">
+        <!-- Dynamically populated breadcrumb items -->
+      </div>
+    </div>
+  </nav>
+
   <!-- Visualization -->
   <div class="viz-area">
     <div id="visualization">

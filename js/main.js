@@ -71,6 +71,168 @@ let currentSuggestions = { recent: [], matching: [] };
 let isApplyingURLState = false;
 
 // ============================================================================
+// LOADING STATE MANAGEMENT
+// ============================================================================
+
+/**
+ * Show loading overlay with optional custom message
+ * @param {string} message - Custom loading message (default: "Loading...")
+ */
+function showLoading(message = 'Loading...') {
+  const overlay = document.getElementById('loadingOverlay');
+  const text = document.getElementById('loadingText');
+
+  if (overlay) {
+    if (text) text.textContent = message;
+    overlay.classList.remove('hiding');
+    overlay.classList.add('active');
+  }
+}
+
+/**
+ * Hide loading overlay with fade-out animation
+ */
+function hideLoading() {
+  const overlay = document.getElementById('loadingOverlay');
+
+  if (overlay && overlay.classList.contains('active')) {
+    overlay.classList.add('hiding');
+
+    // Wait for animation to complete before hiding
+    setTimeout(() => {
+      overlay.classList.remove('active', 'hiding');
+    }, 300);
+  }
+}
+
+// Make loading functions globally available
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
+
+// ============================================================================
+// BREADCRUMB NAVIGATION
+// ============================================================================
+
+/**
+ * Breadcrumb navigation path
+ * Array of { name, node } objects representing current navigation path
+ */
+let breadcrumbPath = [];
+
+/**
+ * Update breadcrumb trail based on current navigation path
+ * @param {Array} path - Array of {name, node} objects
+ */
+function updateBreadcrumbs(path = []) {
+  const breadcrumbNav = document.getElementById('breadcrumbNav');
+  const breadcrumbTrail = document.getElementById('breadcrumbTrail');
+
+  if (!breadcrumbNav || !breadcrumbTrail) return;
+
+  // Store path globally
+  breadcrumbPath = path;
+
+  // Clear existing trail
+  breadcrumbTrail.innerHTML = '';
+
+  // Show/hide breadcrumb nav based on path
+  if (path.length === 0) {
+    breadcrumbNav.style.display = 'none';
+    return;
+  }
+
+  breadcrumbNav.style.display = 'flex';
+
+  // Build breadcrumb items
+  path.forEach((item, index) => {
+    // Add separator
+    const separator = document.createElement('span');
+    separator.className = 'breadcrumb-separator';
+    separator.textContent = '›';
+    breadcrumbTrail.appendChild(separator);
+
+    // Add breadcrumb item
+    const breadcrumb = document.createElement('button');
+    breadcrumb.className = 'breadcrumb-item';
+
+    // Mark last item as current
+    if (index === path.length - 1) {
+      breadcrumb.classList.add('current');
+    }
+
+    const text = document.createElement('span');
+    text.className = 'breadcrumb-text';
+    text.textContent = item.name;
+
+    breadcrumb.appendChild(text);
+    breadcrumb.title = item.name;
+
+    // Click handler to navigate to this level
+    if (index < path.length - 1) {
+      breadcrumb.addEventListener('click', () => {
+        navigateToBreadcrumb(index);
+      });
+    }
+
+    breadcrumbTrail.appendChild(breadcrumb);
+  });
+}
+
+/**
+ * Navigate to a specific breadcrumb level
+ * @param {number} index - Index in breadcrumbPath to navigate to
+ */
+function navigateToBreadcrumb(index) {
+  if (index < 0 || index >= breadcrumbPath.length) return;
+
+  const targetItem = breadcrumbPath[index];
+
+  // Dispatch custom event for visualizations to handle
+  window.dispatchEvent(new CustomEvent('breadcrumbNavigate', {
+    detail: {
+      node: targetItem.node,
+      index: index,
+      path: breadcrumbPath.slice(0, index + 1)
+    }
+  }));
+
+  // Update breadcrumbs to new path
+  updateBreadcrumbs(breadcrumbPath.slice(0, index + 1));
+}
+
+/**
+ * Push a new item to breadcrumb path
+ * @param {string} name - Display name
+ * @param {object} node - Data node object
+ */
+function pushBreadcrumb(name, node) {
+  breadcrumbPath.push({ name, node });
+  updateBreadcrumbs(breadcrumbPath);
+}
+
+/**
+ * Reset breadcrumbs to root (empty path)
+ */
+function resetBreadcrumbs() {
+  breadcrumbPath = [];
+  updateBreadcrumbs([]);
+}
+
+// Make breadcrumb functions globally available
+window.updateBreadcrumbs = updateBreadcrumbs;
+window.pushBreadcrumb = pushBreadcrumb;
+window.resetBreadcrumbs = resetBreadcrumbs;
+window.navigateToBreadcrumb = navigateToBreadcrumb;
+
+// Home button listener
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('breadcrumbHome')?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('resetVisualization'));
+    resetBreadcrumbs();
+  });
+});
+
+// ============================================================================
 // URL DEEP LINKING
 // ============================================================================
 
@@ -525,9 +687,13 @@ function handleSuggestionKeyboard(e) {
 
 // Load and initialize data
 async function loadData() {
+  showLoading('Loading climate solutions data...');
+
   try {
     const response = await fetch('db/latest/CD_Solution_map_2_content.json');
     const rawData = await response.json();
+
+    showLoading('Processing data...');
 
     // Extract types, tags, authors, locations and build search index from RAW data (with urls arrays)
     extractTypesAndTags(rawData, allTypes, allTags, allAuthors, allLocations);
@@ -544,9 +710,18 @@ async function loadData() {
     const count = countNodes(globalData);
     document.getElementById('searchInfo').textContent = `${count.toLocaleString()} solutions`;
 
+    showLoading('Rendering visualization...');
+
+    // Small delay to let UI update
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     renderVisualization();
+
+    // Hide loading after render completes
+    hideLoading();
   } catch (error) {
     console.error('Error loading data:', error);
+    hideLoading();
     document.getElementById('visualization').innerHTML = `
       <div class="loading">
         <div class="loading-icon">⚠️</div>
@@ -558,54 +733,75 @@ async function loadData() {
 
 // Render visualization based on current selection
 function renderVisualization() {
-  // Clear previous visualization
-  d3.select('#visualization').selectAll('*').remove();
+  // Show loading for visualization switches (brief)
+  const vizNames = {
+    'circle': 'Circle Packing',
+    'dendrogram': 'Dendrogram',
+    'treemap': 'Treemap',
+    'sunburst': 'Sunburst'
+  };
+  showLoading(`Rendering ${vizNames[currentViz] || 'visualization'}...`);
 
-  const filteredData = getFilteredData(globalData, searchQuery, currentType, currentTag, currentAuthor, currentLocation, currentDateFrom, currentDateTo, searchIndex);
+  // Use setTimeout to allow loading UI to render before heavy computation
+  setTimeout(() => {
+    try {
+      // Clear previous visualization
+      d3.select('#visualization').selectAll('*').remove();
 
-  if (!filteredData) {
-    document.getElementById('visualization').innerHTML = `
-      <div class="loading">
-        <div class="loading-icon">🔍</div>
-        <div class="loading-text">No results found</div>
-      </div>
-    `;
-    return;
-  }
+      const filteredData = getFilteredData(globalData, searchQuery, currentType, currentTag, currentAuthor, currentLocation, currentDateFrom, currentDateTo, searchIndex);
 
-  // Create wrapped tooltip functions with tooltip reference
-  const wrappedShowTooltip = (event, d) => showTooltip(tooltip, event, d);
-  const wrappedHideTooltip = () => hideTooltip(tooltip);
+      if (!filteredData) {
+        hideLoading();
+        document.getElementById('visualization').innerHTML = `
+          <div class="loading">
+            <div class="loading-icon">🔍</div>
+            <div class="loading-text">No results found</div>
+          </div>
+        `;
+        return;
+      }
 
-  // Clean up any lingering visualization elements before rendering
-  d3.selectAll('.dendrogram-home').remove();
-  d3.selectAll('.zoom-controls').remove();
-  d3.selectAll('.treemap-zoom-controls').remove();
+      // Create wrapped tooltip functions with tooltip reference
+      const wrappedShowTooltip = (event, d) => showTooltip(tooltip, event, d);
+      const wrappedHideTooltip = () => hideTooltip(tooltip);
 
-  switch (currentViz) {
-    case 'circle':
-      renderCirclePacking(filteredData, wrappedShowTooltip, wrappedHideTooltip);
-      break;
-    case 'dendrogram':
-      renderDendrogram(filteredData, wrappedShowTooltip, wrappedHideTooltip);
-      break;
-    case 'treemap':
-      renderTreemap(filteredData, wrappedShowTooltip, wrappedHideTooltip);
-      break;
-    case 'sunburst':
-      renderSunburst(filteredData, wrappedShowTooltip, wrappedHideTooltip);
-      break;
-  }
+      // Clean up any lingering visualization elements before rendering
+      d3.selectAll('.dendrogram-home').remove();
+      d3.selectAll('.zoom-controls').remove();
+      d3.selectAll('.treemap-zoom-controls').remove();
 
-  // Show the home and up buttons after rendering visualization
-  if (window.showHomeButton) {
-    window.showHomeButton();
-  }
-  if (window.showUpButton) {
-    window.showUpButton();
-  }
+      switch (currentViz) {
+        case 'circle':
+          renderCirclePacking(filteredData, wrappedShowTooltip, wrappedHideTooltip);
+          break;
+        case 'dendrogram':
+          renderDendrogram(filteredData, wrappedShowTooltip, wrappedHideTooltip);
+          break;
+        case 'treemap':
+          renderTreemap(filteredData, wrappedShowTooltip, wrappedHideTooltip);
+          break;
+        case 'sunburst':
+          renderSunburst(filteredData, wrappedShowTooltip, wrappedHideTooltip);
+          break;
+      }
 
-  updateSearchInfo(filteredData);
+      // Show the home and up buttons after rendering visualization
+      if (window.showHomeButton) {
+        window.showHomeButton();
+      }
+      if (window.showUpButton) {
+        window.showUpButton();
+      }
+
+      updateSearchInfo(filteredData);
+
+      // Hide loading after render completes
+      hideLoading();
+    } catch (error) {
+      console.error('Error rendering visualization:', error);
+      hideLoading();
+    }
+  }, 50); // Small delay to let loading UI render
 
   // Update URL with current state (for deep linking)
   updateURL();

@@ -6,6 +6,196 @@
   100% { background-position: 0% 50%; }
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 31, 26, 0.95);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+.loading-overlay.active {
+  display: flex;
+}
+
+.loading-overlay.hiding {
+  animation: fadeOut 0.3s ease;
+}
+
+.loading-spinner {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin-bottom: 20px;
+}
+
+.spinner-circle {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 4px solid rgba(64, 145, 108, 0.2);
+  border-top: 4px solid rgba(64, 145, 108, 0.9);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 40px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.loading-overlay .loading-text {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1px;
+  margin-top: 10px;
+}
+
+/* Breadcrumb Navigation */
+.breadcrumb-nav {
+  padding: 10px 20px;
+  background: linear-gradient(to bottom, rgba(10, 31, 26, 0.6), rgba(10, 31, 26, 0.3));
+  backdrop-filter: blur(5px);
+  border-bottom: 1px solid rgba(64, 145, 108, 0.2);
+  z-index: 100;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(64, 145, 108, 0.1);
+  border: 1px solid rgba(64, 145, 108, 0.3);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.breadcrumb-item:hover {
+  background: rgba(64, 145, 108, 0.2);
+  border-color: rgba(64, 145, 108, 0.5);
+  transform: translateY(-1px);
+}
+
+.breadcrumb-item:active {
+  transform: translateY(0);
+}
+
+.breadcrumb-home {
+  background: rgba(64, 145, 108, 0.15);
+  border-color: rgba(64, 145, 108, 0.4);
+}
+
+.breadcrumb-home:hover {
+  background: rgba(64, 145, 108, 0.25);
+}
+
+.breadcrumb-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.breadcrumb-text {
+  line-height: 1;
+}
+
+.breadcrumb-trail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-separator {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  user-select: none;
+}
+
+.breadcrumb-item.current {
+  background: rgba(64, 145, 108, 0.3);
+  border-color: rgba(64, 145, 108, 0.6);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Responsive breadcrumbs */
+@media (max-width: 768px) {
+  .breadcrumb-nav {
+    padding: 8px 15px;
+  }
+
+  .breadcrumb-item {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  .breadcrumb-icon {
+    font-size: 14px;
+  }
+
+  .breadcrumb-text {
+    display: none; /* Hide text on mobile, show icons only */
+  }
+
+  .breadcrumb-home .breadcrumb-text {
+    display: inline; /* Keep "Climate Solutions" text */
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
   background: linear-gradient(135deg, #0a1f1a 0%, #0d2e27 25%, #0a1f1a 50%, #1a3a2e 75%, #0a1f1a 100%);
