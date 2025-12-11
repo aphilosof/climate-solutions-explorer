@@ -537,7 +537,7 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
           .style('left', (event.pageX + 5) + 'px')
           .style('top', (event.pageY - 35) + 'px')
           .html(`
-            <div style="font-weight: bold; margin-bottom: 4px;">Climate Solution</div>
+            <div style="font-weight: bold; margin-bottom: 4px;">Climate Solutions</div>
             <div style="font-size: 12px; color: #666;">
               ⬆️ Click to zoom out to root view
             </div>
@@ -582,7 +582,7 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     .style('fill', '#40916c')
     .style('pointer-events', 'none')
     .style('user-select', 'none')
-    .text('Climate Solution');
+    .text('Climate Solutions');
 
   // Listen for reset event from global home button
   const resetHandler = () => {
