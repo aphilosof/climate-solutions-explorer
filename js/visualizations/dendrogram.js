@@ -199,6 +199,7 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
   let tooltipFreezeTimer = null;
   let wasDragging = false;
   let focusNode = root; // Track currently focused node for zoom-to-path (FIX #3)
+  let activePath = []; // Track active breadcrumb path
 
   // Create link generator with null safety
   const linkGenerator = d3.linkHorizontal()
@@ -214,6 +215,39 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
     if (node._children) {
       node._children.forEach(child => setHiddenRecursive(child, hidden));
     }
+  }
+
+  // Helper function to build breadcrumb path from root to node
+  function buildPath(node, rootNode) {
+    const path = [];
+    let current = node;
+
+    while (current && current !== rootNode) {
+      path.unshift({
+        name: current.data.name || current.data.entity_name || 'Unnamed',
+        node: current
+      });
+      current = current.parent;
+    }
+
+    return path;
+  }
+
+  // Update breadcrumbs for dendrogram
+  function updateBreadcrumbsForDendrogram(node) {
+    if (!window.updateBreadcrumbs) return;
+
+    // If we're at root or no active path, hide breadcrumbs
+    if (!node || node === root) {
+      window.resetBreadcrumbs();
+      activePath = [];
+      return;
+    }
+
+    // Build path from root to this node
+    const path = buildPath(node, root);
+    activePath = path;
+    window.updateBreadcrumbs(path);
   }
 
   // Helper function to cluster terminal nodes for any parent (>5 terminals)
@@ -549,6 +583,9 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
             }
           }
 
+          // Update breadcrumbs to show path to expanded node
+          updateBreadcrumbsForDendrogram(d);
+
           update(d);
         } else if (items && items.length > 0) {
           // Terminal leaf with content - open side panel
@@ -852,6 +889,51 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
       // If frozen, tooltip stays visible until timer expires
     });
 
+  // Listen for breadcrumb navigation events
+  const breadcrumbHandler = (e) => {
+    const targetNode = e.detail.node;
+    if (targetNode) {
+      // Find the node in the tree
+      let found = null;
+      root.descendants().forEach(d => {
+        if (d === targetNode) {
+          found = d;
+        }
+      });
+
+      if (found) {
+        // Expand path to this node
+        let current = found.parent;
+        while (current) {
+          if (current._children) {
+            current.children = current._children;
+            current._children = null;
+          }
+          current = current.parent;
+        }
+
+        // Hide siblings along the path
+        current = found;
+        while (current && current.parent) {
+          if (current.parent.children) {
+            current.parent.children.forEach(sibling => {
+              if (sibling !== current) {
+                setHiddenRecursive(sibling, true);
+              } else {
+                setHiddenRecursive(sibling, false);
+              }
+            });
+          }
+          current = current.parent;
+        }
+
+        // Update breadcrumbs and render
+        updateBreadcrumbsForDendrogram(found);
+        update(found);
+      }
+    }
+  };
+
   // Listen for reset event from global home button
   const resetHandler = () => {
     // Reset to root and restore initial collapsed state (show only 3 main categories)
@@ -867,6 +949,8 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
         }
       }
     });
+    // Reset breadcrumbs
+    updateBreadcrumbsForDendrogram(null);
     // Reset view to root
     update(root);
   };
@@ -884,18 +968,28 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
         }
       }
     });
+    // Reset breadcrumbs
+    updateBreadcrumbsForDendrogram(null);
     update(root);
   };
 
   // Add event listeners
+  window.addEventListener('breadcrumbNavigate', breadcrumbHandler);
   window.addEventListener('resetVisualization', resetHandler);
   window.addEventListener('goUpLevel', upHandler);
 
-  // Clean up event listeners on window resize (when visualization is re-rendered)
-  const cleanupHandlers = () => {
+  // Cleanup function (called when visualization changes)
+  const cleanup = () => {
+    window.removeEventListener('breadcrumbNavigate', breadcrumbHandler);
     window.removeEventListener('resetVisualization', resetHandler);
     window.removeEventListener('goUpLevel', upHandler);
   };
+
+  // Store cleanup function for next render
+  if (window._dendrogramCleanup) {
+    window._dendrogramCleanup();
+  }
+  window._dendrogramCleanup = cleanup;
 
   // Handle window resize - updates like circlePacking
   let resizeTimer;

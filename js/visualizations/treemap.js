@@ -14,24 +14,10 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
 
   d3.select('#visualization').selectAll('*').remove();
 
-  // Create breadcrumb navigation
-  const breadcrumbContainer = d3.select('#visualization')
-    .append('div')
-    .attr('class', 'treemap-breadcrumb')
-    .style('padding', '10px 20px')
-    .style('background', 'rgba(0, 0, 0, 0.5)')
-    .style('color', 'white')
-    .style('font-size', '14px')
-    .style('font-weight', '500')
-    .style('display', 'flex')
-    .style('align-items', 'center')
-    .style('gap', '8px')
-    .style('flex-wrap', 'wrap');
-
   const svg = d3.select('#visualization')
     .append('svg')
     .attr('width', width)
-    .attr('height', height - 44)  // Adjust for breadcrumb height
+    .attr('height', height)  // Use full height - no inline breadcrumb
     .style('cursor', 'pointer');
 
   // Category-specific color palette (depth-1 categories get unique colors)
@@ -138,9 +124,8 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
     return baseColor;
   }
 
-  const breadcrumbHeight = 44;
   const treemap = d3.treemap()
-    .size([width, height - breadcrumbHeight])
+    .size([width, height])
     .padding(2)
     .round(true);
 
@@ -219,57 +204,25 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
 
   const g = svg.append('g');
 
-  // Update breadcrumb navigation
+  // Update global breadcrumb navigation
   function updateBreadcrumb() {
+    if (!window.updateBreadcrumbs) return;
+
     // Build full path: navigationStack + currentRoot
-    const path = [...navigationStack, currentRoot];
+    const fullPath = [...navigationStack, currentRoot];
 
-    // Clear existing breadcrumb
-    breadcrumbContainer.selectAll('*').remove();
+    // Convert to breadcrumb format (skip root, start from depth-1)
+    const breadcrumbPath = fullPath.slice(1).map(node => ({
+      name: node.data.name || node.data.entity_name || 'Unnamed',
+      node: node
+    }));
 
-    // Add breadcrumb items
-    path.forEach((node, index) => {
-      // Add separator arrow (except for first item)
-      if (index > 0) {
-        breadcrumbContainer.append('span')
-          .style('color', 'rgba(255, 255, 255, 0.6)')
-          .text('→');
-      }
-
-      // Add breadcrumb link
-      const isLast = index === path.length - 1;
-      const crumb = breadcrumbContainer.append('span')
-        .style('cursor', isLast ? 'default' : 'pointer')
-        .style('color', isLast ? 'white' : 'rgba(255, 255, 255, 0.8)')
-        .style('text-decoration', isLast ? 'none' : 'none')
-        .style('font-weight', isLast ? 'bold' : 'normal')
-        .text(node.data.name || 'Root')
-        .on('mouseover', function() {
-          if (!isLast) {
-            d3.select(this)
-              .style('color', 'white')
-              .style('text-decoration', 'underline');
-          }
-        })
-        .on('mouseout', function() {
-          if (!isLast) {
-            d3.select(this)
-              .style('color', 'rgba(255, 255, 255, 0.8)')
-              .style('text-decoration', 'none');
-          }
-        });
-
-      // Make clickable if not the last item
-      if (!isLast) {
-        crumb.on('click', () => {
-          // Navigate to this level by popping stack until we reach it
-          while (navigationStack.length > index) {
-            navigationStack.pop();
-          }
-          drillDown(node, true);  // true = isBackNavigation
-        });
-      }
-    });
+    // If we're at root, hide breadcrumbs
+    if (breadcrumbPath.length === 0) {
+      window.resetBreadcrumbs();
+    } else {
+      window.updateBreadcrumbs(breadcrumbPath);
+    }
   }
 
   // Render function for current level
@@ -631,6 +584,24 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
     }
   });
 
+  // Listen for breadcrumb navigation events
+  const breadcrumbHandler = (e) => {
+    const targetNode = e.detail.node;
+    if (targetNode) {
+      // Find the index of this node in the path
+      const fullPath = [...navigationStack, currentRoot];
+      const index = fullPath.indexOf(targetNode);
+
+      if (index >= 0) {
+        // Pop stack until we reach target node
+        while (navigationStack.length > index) {
+          navigationStack.pop();
+        }
+        drillDown(targetNode, true);  // true = isBackNavigation
+      }
+    }
+  };
+
   // Listen for reset event from global home button
   const resetHandler = () => {
     // Clear navigation stack and go to root
@@ -648,14 +619,22 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
   };
 
   // Add event listeners
+  window.addEventListener('breadcrumbNavigate', breadcrumbHandler);
   window.addEventListener('resetVisualization', resetHandler);
   window.addEventListener('goUpLevel', upHandler);
 
-  // Clean up event listeners on window resize (when visualization is re-rendered)
-  const cleanupHandlers = () => {
+  // Cleanup function (called when visualization changes)
+  const cleanup = () => {
+    window.removeEventListener('breadcrumbNavigate', breadcrumbHandler);
     window.removeEventListener('resetVisualization', resetHandler);
     window.removeEventListener('goUpLevel', upHandler);
   };
+
+  // Store cleanup function for next render
+  if (window._treemapCleanup) {
+    window._treemapCleanup();
+  }
+  window._treemapCleanup = cleanup;
 
   // Handle window resize with debounce
   let resizeTimer;
@@ -669,10 +648,10 @@ export function renderTreemap(data, showTooltip, hideTooltip) {
       if (!width || !height) return;
 
       // Update SVG size
-      svg.attr('width', width).attr('height', height - breadcrumbHeight);
+      svg.attr('width', width).attr('height', height);
 
       // Update treemap size and recalculate
-      treemap.size([width, height - breadcrumbHeight]);
+      treemap.size([width, height]);
 
       // Recalculate current root
       const newRoot = d3.hierarchy(currentRoot.data)

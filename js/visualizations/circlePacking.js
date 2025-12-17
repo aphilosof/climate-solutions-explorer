@@ -606,5 +606,69 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
       .on('end', function(d) {
         if (d.parent !== focus) this.style.display = 'none';
       });
+
+    // Update breadcrumbs when zooming
+    updateBreadcrumbsForCirclePacking(d, root);
   }
+
+  // Helper function to build breadcrumb path from root to current node
+  function buildPath(node, rootNode) {
+    const path = [];
+    let current = node;
+
+    while (current && current !== rootNode) {
+      path.unshift({
+        name: current.data.name || current.data.entity_name || 'Unnamed',
+        node: current
+      });
+      current = current.parent;
+    }
+
+    return path;
+  }
+
+  // Update breadcrumbs for current focus
+  function updateBreadcrumbsForCirclePacking(focusNode, rootNode) {
+    if (!window.updateBreadcrumbs) return;
+
+    // If we're at root, hide breadcrumbs
+    if (focusNode === rootNode) {
+      window.resetBreadcrumbs();
+      return;
+    }
+
+    // Build path from root to focus
+    const path = buildPath(focusNode, rootNode);
+    window.updateBreadcrumbs(path);
+  }
+
+  // Listen for breadcrumb navigation events
+  const breadcrumbHandler = (e) => {
+    const targetNode = e.detail.node;
+    if (targetNode) {
+      // Zoom to the target node
+      zoom({ altKey: false }, targetNode);
+    }
+  };
+
+  const resetHandler = () => {
+    // Reset to root view
+    zoom({ altKey: false }, root);
+  };
+
+  // Add event listeners
+  window.addEventListener('breadcrumbNavigate', breadcrumbHandler);
+  window.addEventListener('resetVisualization', resetHandler);
+
+  // Cleanup function (called when visualization changes)
+  const cleanup = () => {
+    window.removeEventListener('breadcrumbNavigate', breadcrumbHandler);
+    window.removeEventListener('resetVisualization', resetHandler);
+  };
+
+  // Store cleanup function for next render
+  if (window._circlePackingCleanup) {
+    window._circlePackingCleanup();
+  }
+  window._circlePackingCleanup = cleanup;
 }

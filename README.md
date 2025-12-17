@@ -46,11 +46,14 @@ A platform for exploring climate solutions data through interactive visualizatio
    ```
 
 2. **Prepare your data**
-   - Option 1 - Place your climate solutions data file as `CD_Solution_map_2_DB_prototype_V3.json` in the root directory
-    - See [Data Format](#data-format) section for structure requirements
-   -  Option 2 - complie the json file from the two `CD Solution map 2.0 DB prototype - V3` google sheet.
-    - Download the two sheets as `Taxonomy`.tsv and `Content.tsv`
-    - Create a json file using `tsv_to_json_from_taxonomy_and_content_sheets_claude.py`
+   - **Option 1 (Recommended)**: Use automated TSV to JSON conversion
+     - Export data from Google Sheets as TSV files
+     - Place in `db/latest/` directory as `CD_Solution_map_2_taxonomy.tsv` and `CD_Solution_map_2_content.tsv`
+     - Push to GitHub - automatic conversion happens via GitHub Actions
+     - See [Data Management & Automation](#-data-management--automation) for details
+   - **Option 2**: Place pre-generated JSON file in `db/latest/` directory
+     - File: `CD_Solution_map_2_content.json`
+     - See [Data Format](#data-format) section for structure requirements
 
 3. **Launch the application**
    ```bash
@@ -285,6 +288,8 @@ All exports include active filter information in the filename for easy reference
 
 ## 📁 Data Format
 
+> **📖 Complete Documentation**: For comprehensive data structure documentation including field specifications, validation rules, best practices, and examples, see [DATA_STRUCTURE.md](docs/DATA_STRUCTURE.md)
+
 ### Required JSON Structure
 ```json
 {
@@ -343,6 +348,95 @@ miniSearch = new MiniSearch({
 });
 ```
 
+## 🔄 Data Management & Automation
+
+### Automated TSV to JSON Conversion
+
+This repository includes **automated data processing** using GitHub Actions. When you update TSV data files, the system automatically converts them to JSON with version tracking and changelog generation.
+
+#### How It Works
+
+**Automatic Conversion:**
+1. Export updated data from Google Sheets as TSV files
+2. Place files in `db/latest/` directory:
+   - `CD_Solution_map_2_taxonomy.tsv` (hierarchical structure)
+   - `CD_Solution_map_2_content.tsv` (content entries)
+3. Commit and push to GitHub
+4. **GitHub Actions automatically**:
+   - Converts TSV → JSON using the V7 Python script
+   - Generates `db/latest/CD_Solution_map_2_content.json`
+   - Auto-increments version number in `version.txt`
+   - Logs changes to `version_history.txt` with statistics
+   - Commits all updates with detailed message
+
+**Manual Trigger:**
+- Go to **Actions** tab in GitHub
+- Select "Convert TSV to JSON"
+- Click "Run workflow"
+
+#### Version Tracking
+
+Every data update automatically creates:
+
+**`version.txt`** - Current version number (semantic versioning)
+```
+1.0.5
+```
+
+**`version_history.txt`** - Complete changelog with statistics
+```
+2025-12-12 10:30:45 UTC | v1.0.0 | Taxonomy: 234 lines | Content: 1567 lines | JSON: 456789 bytes
+2025-12-12 14:23:12 UTC | v1.0.1 | Taxonomy: 234 lines | Content: 1589 lines | JSON: 458901 bytes
+2025-12-13 09:15:30 UTC | v1.0.2 | Taxonomy: 245 lines | Content: 1612 lines | JSON: 462345 bytes
+```
+
+**Git Commit Messages** - Rich details for every update
+```
+🤖 Auto-generate JSON v1.0.5
+
+Updated data from TSV files:
+- Taxonomy: 234 lines
+- Content: 1567 lines
+- Timestamp: 2025-12-12 14:23:12 UTC
+
+Generated with Claude Code https://claude.com/claude-code
+```
+
+#### Benefits
+
+✅ **No Local Setup** - Conversion runs on GitHub servers
+✅ **Always Up-to-Date** - JSON automatically updated when TSV changes
+✅ **Version Controlled** - All changes tracked in Git history
+✅ **Automatic Versioning** - Semantic version numbers auto-increment
+✅ **Change Tracking** - Complete history with timestamps and statistics
+✅ **Detailed Commits** - Rich commit messages with data metrics
+✅ **Audit Trail** - Full traceability of all data updates
+
+#### Manual Conversion (Fallback)
+
+If you need to run the conversion locally:
+```bash
+python src/tsv_to_json_from_taxonomy_and_content_sheets_V7.py \
+  --taxonomy db/latest/CD_Solution_map_2_taxonomy.tsv \
+  --content db/latest/CD_Solution_map_2_content.tsv \
+  --output db/latest/CD_Solution_map_2_content.json
+```
+
+#### Workflow Configuration
+
+The automation is configured in `.github/workflows/convert-tsv-to-json.yml`
+
+**Triggers:**
+- Automatic: When any `.tsv` file in `db/latest/` is pushed
+- Manual: Via GitHub Actions UI
+
+**What Gets Updated:**
+- `db/latest/CD_Solution_map_2_content.json` - Generated data
+- `db/latest/version.txt` - Version number
+- `db/latest/version_history.txt` - Full changelog
+
+For detailed documentation, see [TSV_TO_JSON_AUTOMATION.md](docs/TSV_TO_JSON_AUTOMATION.md)
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -361,6 +455,21 @@ miniSearch = new MiniSearch({
 - Consider reducing data size or implementing progressive loading
 - Disable animations for better performance
 - Check browser memory usage in developer tools
+
+**TSV to JSON automation fails:**
+- Check **Actions** tab in GitHub for error details
+- Verify TSV files are in `db/latest/` directory with correct names:
+  - `CD_Solution_map_2_taxonomy.tsv`
+  - `CD_Solution_map_2_content.tsv`
+- Ensure TSV files have proper headers and format
+- Check that workflow has write permissions to repository
+- See [TSV_TO_JSON_AUTOMATION.md](docs/TSV_TO_JSON_AUTOMATION.md) for detailed troubleshooting
+
+**JSON not updating after TSV push:**
+- Verify workflow ran successfully in **Actions** tab
+- Check if TSV files actually changed (workflow only commits if content changed)
+- Ensure workflow is watching correct file paths (`db/latest/*.tsv`)
+- Try manual trigger: Actions → "Convert TSV to JSON" → "Run workflow"
 
 
 

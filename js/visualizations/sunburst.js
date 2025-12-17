@@ -584,6 +584,45 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     .style('user-select', 'none')
     .text('Climate Solutions');
 
+  // Helper function to build breadcrumb path from root to current node
+  function buildPath(node, rootNode) {
+    const path = [];
+    let current = node;
+
+    while (current && current !== rootNode) {
+      path.unshift({
+        name: current.data.name || current.data.entity_name || 'Unnamed',
+        node: current
+      });
+      current = current.parent;
+    }
+
+    return path;
+  }
+
+  // Update breadcrumbs for current focus
+  function updateBreadcrumbsForSunburst(focusNode, rootNode) {
+    if (!window.updateBreadcrumbs) return;
+
+    // If we're at root, hide breadcrumbs
+    if (focusNode === rootNode) {
+      window.resetBreadcrumbs();
+      return;
+    }
+
+    // Build path from root to focus
+    const path = buildPath(focusNode, rootNode);
+    window.updateBreadcrumbs(path);
+  }
+
+  // Listen for breadcrumb navigation events
+  const breadcrumbHandler = (e) => {
+    const targetNode = e.detail.node;
+    if (targetNode) {
+      zoomToNode(targetNode);
+    }
+  };
+
   // Listen for reset event from global home button
   const resetHandler = () => {
     zoomToNode(root);
@@ -597,14 +636,22 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
   };
 
   // Add event listeners
+  window.addEventListener('breadcrumbNavigate', breadcrumbHandler);
   window.addEventListener('resetVisualization', resetHandler);
   window.addEventListener('goUpLevel', upHandler);
 
-  // Clean up event listeners on window resize (when visualization is re-rendered)
-  const cleanupHandlers = () => {
+  // Cleanup function (called when visualization changes)
+  const cleanup = () => {
+    window.removeEventListener('breadcrumbNavigate', breadcrumbHandler);
     window.removeEventListener('resetVisualization', resetHandler);
     window.removeEventListener('goUpLevel', upHandler);
   };
+
+  // Store cleanup function for next render
+  if (window._sunburstCleanup) {
+    window._sunburstCleanup();
+  }
+  window._sunburstCleanup = cleanup;
 
   // Zoom/focus function - actually zoom/transform arcs
   function zoomToNode(p) {
@@ -744,6 +791,9 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         const isFocusPath = (d === p) || isAncestor(d, p) || isDescendant(d, p);
         return isFocusPath ? 1 : 0;
       });
+
+    // Update breadcrumbs when zooming
+    updateBreadcrumbsForSunburst(p, root);
   }
 
   // Check if node d is an ancestor of node target
