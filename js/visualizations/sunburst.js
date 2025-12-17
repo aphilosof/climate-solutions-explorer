@@ -397,16 +397,155 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       event.stopPropagation();
     });
 
-  // Add text labels to arcs
-  const labels = g.selectAll('text')
-    .data(root.descendants().filter(d => d.depth > 0))
+  // Find the maximum outer radius for depth-1 nodes (for uniform label placement)
+  const depth1Nodes = root.descendants().filter(d => d.depth === 1);
+  const maxDepth1Radius = d3.max(depth1Nodes, d => d.y1);
+  const labelRadius = radius * 0.95; // Place labels on outer perimeter (95% of total radius)
+
+  // Create a defs section for text paths
+  const defs = svg.append('defs');
+
+  // Helper function to create an arc path for text to follow
+  function createTextPath(d, outerRadius) {
+    const startAngle = d.x0;
+    const endAngle = d.x1;
+
+    // Check if we need to flip the path for better readability
+    // Flip text on the left half of the circle (between 90° and 270°)
+    const midAngle = (startAngle + endAngle) / 2;
+    const shouldFlip = midAngle > Math.PI / 2 && midAngle < 3 * Math.PI / 2;
+
+    let start, end;
+    if (shouldFlip) {
+      // Create path from end to start (reversed) for left side
+      start = endAngle;
+      end = startAngle;
+    } else {
+      // Normal path from start to end for right side
+      start = startAngle;
+      end = endAngle;
+    }
+
+    const startX = Math.sin(start) * outerRadius;
+    const startY = -Math.cos(start) * outerRadius;
+    const endX = Math.sin(end) * outerRadius;
+    const endY = -Math.cos(end) * outerRadius;
+
+    // Create SVG arc path
+    const largeArcFlag = Math.abs(end - start) > Math.PI ? 1 : 0;
+    const sweepFlag = shouldFlip ? 0 : 1;
+
+    return `M ${startX},${startY} A ${outerRadius},${outerRadius} 0 ${largeArcFlag},${sweepFlag} ${endX},${endY}`;
+  }
+
+  // Helper function to split text into two lines if needed
+  function splitTextForArc(text, arcWidth, fontSize) {
+    const charWidth = fontSize * 0.5;
+    const maxCharsPerLine = Math.floor((arcWidth * 0.95) / charWidth);
+
+    // If text fits on one line, return as single line
+    if (text.length <= maxCharsPerLine) {
+      return [text];
+    }
+
+    // Split into two lines at a word boundary near the middle
+    const words = text.split(' ');
+    if (words.length === 1) {
+      // Single long word - split at character boundary
+      const midPoint = Math.floor(text.length / 2);
+      return [text.substring(0, midPoint), text.substring(midPoint)];
+    }
+
+    // Find best split point (closest to middle without exceeding maxCharsPerLine)
+    let line1 = '';
+    let line2 = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = line1 ? line1 + ' ' + word : word;
+
+      if (testLine.length <= maxCharsPerLine || line1 === '') {
+        line1 = testLine;
+      } else {
+        line2 = words.slice(i).join(' ');
+        break;
+      }
+    }
+
+    // If line2 is too long, truncate it
+    if (line2.length > maxCharsPerLine) {
+      line2 = line2.substring(0, maxCharsPerLine - 1) + '…';
+    }
+
+    return line2 ? [line1, line2] : [line1];
+  }
+
+  // Add text paths for depth-1 labels (create paths at two different radii for two-line labels)
+  depth1Nodes.forEach((d, i) => {
+    // Path for single line or first line (inner line, more inward)
+    defs.append('path')
+      .attr('id', `textPath-${i}-line1`)
+      .attr('d', createTextPath(d, labelRadius - 8))
+      .style('fill', 'none')
+      .style('stroke', 'none');
+
+    // Path for second line (outer line, more outward)
+    defs.append('path')
+      .attr('id', `textPath-${i}-line2`)
+      .attr('d', createTextPath(d, labelRadius + 8))
+      .style('fill', 'none')
+      .style('stroke', 'none');
+  });
+
+  // Add curved text labels for depth-1 nodes
+  const curvedLabelsGroup = g.selectAll('.curved-label-group')
+    .data(depth1Nodes)
+    .join('g')
+    .attr('class', 'curved-label-group')
+    .each(function(d, i) {
+      if (d.data._isCluster) return;
+
+      const arcAngle = d.x1 - d.x0;
+      if (arcAngle < 0.05) return;
+
+      const name = d.data.name || d.data.entity_name || '';
+      const arcWidth = arcAngle * labelRadius;
+      const baseFontSize = Math.max(10, Math.min(16, arcWidth / 8));
+
+      const lines = splitTextForArc(name, arcWidth, baseFontSize);
+
+      // Reduce font size slightly for wrapped text to improve readability
+      const fontSize = lines.length > 1 ? baseFontSize * 0.9 : baseFontSize;
+
+      // Create text element for each line
+      lines.forEach((line, lineIndex) => {
+        d3.select(this)
+          .append('text')
+          .attr('class', 'curved-label')
+          .style('font-size', fontSize + 'px')
+          .style('fill', 'white')
+          .style('pointer-events', 'none')
+          .style('user-select', 'none')
+          .style('font-weight', '600')
+          .append('textPath')
+          .attr('xlink:href', `#textPath-${i}-line${lineIndex + 1}`)
+          .attr('startOffset', '50%')
+          .attr('text-anchor', 'middle')
+          .text(line);
+      });
+    });
+
+  // Add regular text labels for non-depth-1 arcs
+  const labels = g.selectAll('.regular-label')
+    .data(root.descendants().filter(d => d.depth > 1))
     .join('text')
+    .attr('class', 'regular-label')
     .attr('transform', d => {
       // Calculate arc centroid for text position
       const angle = (d.x0 + d.x1) / 2;
-      const radius = (d.y0 + d.y1) / 2;
-      const x = Math.sin(angle) * radius;
-      const y = -Math.cos(angle) * radius;
+      const r = (d.y0 + d.y1) / 2;
+      const x = Math.sin(angle) * r;
+      const y = -Math.cos(angle) * r;
 
       // Rotate text to align with arc
       // Flip text on left side for readability
@@ -427,20 +566,18 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
     .style('pointer-events', 'none')
     .style('user-select', 'none')
     .style('font-weight', '500')
+    .style('opacity', focus === root ? 0 : 1) // Hide at root view, show when zoomed
     .text(d => {
       // Hide cluster node labels (keep category labels)
       if (d.data._isCluster) return '';
 
-      // At root view: only show root (depth 0) and first circle (depth 1) labels
-      if (focus === root) {
-        if (d.depth > 1) return ''; // Hide depth 2+ at root view
-      } else {
-        // When zoomed in: only show labels for focus and its direct children
-        // Calculate relative depth from focus
-        const relativeDepth = d.depth - focus.depth;
-        if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
-        if (relativeDepth < 0) return ''; // Hide ancestors
-      }
+      // At root view, hide all regular labels (only curved depth-1 labels show)
+      if (focus === root) return '';
+
+      // When zoomed in: only show labels for focus and its direct children
+      const relativeDepth = d.depth - focus.depth;
+      if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
+      if (relativeDepth < 0) return ''; // Hide ancestors
 
       // Only show text if arc is large enough
       const arcAngle = d.x1 - d.x0;
@@ -725,7 +862,23 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         return isFocusPath ? null : 'none';
       });
 
-    // Update labels during zoom transition - use TARGET positions
+    // Hide curved labels when zoomed in (they're only for depth-1 at root view)
+    curvedLabelsGroup
+      .transition(transition)
+      .style('opacity', p === root ? 1 : 0);
+
+    // Show/hide regular labels based on zoom level
+    labels
+      .transition(transition)
+      .style('opacity', d => {
+        // Hide at root view
+        if (p === root) return 0;
+        // Show when zoomed if in focus path
+        const isFocusPath = (d === p) || isAncestor(d, p) || isDescendant(d, p);
+        return isFocusPath ? 1 : 0;
+      });
+
+    // Update regular labels during zoom transition - use TARGET positions
     labels
       .style('font-size', d => {
         // Calculate based on TARGET arc size (after zoom)
@@ -739,12 +892,8 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         // Hide cluster node labels (keep category labels)
         if (d.data._isCluster) return '';
 
-        // At root view: only show root (depth 0) and first circle (depth 1) labels
-        if (p === root) {
-          if (d.depth > 1) return ''; // Hide depth 2+ at root view
-        } else {
-          // When zoomed in: only show labels for focus and its direct children
-          // Calculate relative depth from focus
+        // When zoomed in: only show labels for focus and its direct children
+        if (p !== root) {
           const relativeDepth = d.depth - p.depth;
           if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
           if (relativeDepth < 0) return ''; // Hide ancestors
@@ -785,11 +934,6 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         const finalRotation = rotation > 90 ? rotation + 180 : rotation;
 
         return `translate(${x},${y}) rotate(${finalRotation})`;
-      })
-      .style('opacity', d => {
-        // Match arc opacity - hide labels for non-focused arcs
-        const isFocusPath = (d === p) || isAncestor(d, p) || isDescendant(d, p);
-        return isFocusPath ? 1 : 0;
       });
 
     // Update breadcrumbs when zooming
@@ -838,10 +982,58 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       partition.size([2 * Math.PI, radius]);
       partition(root);
 
+      // Recalculate label radius for depth-1 curved labels (outer perimeter)
+      const newLabelRadius = radius * 0.95;
+
       // Update arc paths with new positions
       path.attr('d', arc);
 
-      // Update labels with new positions and sizes
+      // Update curved label paths in defs (both line1 and line2)
+      depth1Nodes.forEach((d, i) => {
+        defs.select(`#textPath-${i}-line1`)
+          .attr('d', createTextPath(d, newLabelRadius - 8));
+        defs.select(`#textPath-${i}-line2`)
+          .attr('d', createTextPath(d, newLabelRadius + 8));
+      });
+
+      // Update curved labels - need to recreate them with proper wrapping
+      curvedLabelsGroup.each(function(d, i) {
+        // Clear existing labels
+        d3.select(this).selectAll('.curved-label').remove();
+
+        if (d.data._isCluster) return;
+
+        const arcAngle = d.x1 - d.x0;
+        if (arcAngle < 0.05) return;
+
+        const name = d.data.name || d.data.entity_name || '';
+        const arcWidth = arcAngle * newLabelRadius;
+        const baseFontSize = Math.max(10, Math.min(16, arcWidth / 8));
+
+        const lines = splitTextForArc(name, arcWidth, baseFontSize);
+
+        // Reduce font size slightly for wrapped text to improve readability
+        const fontSize = lines.length > 1 ? baseFontSize * 0.9 : baseFontSize;
+
+        // Create text element for each line
+        lines.forEach((line, lineIndex) => {
+          d3.select(this)
+            .append('text')
+            .attr('class', 'curved-label')
+            .style('font-size', fontSize + 'px')
+            .style('fill', 'white')
+            .style('pointer-events', 'none')
+            .style('user-select', 'none')
+            .style('font-weight', '600')
+            .append('textPath')
+            .attr('xlink:href', `#textPath-${i}-line${lineIndex + 1}`)
+            .attr('startOffset', '50%')
+            .attr('text-anchor', 'middle')
+            .text(line);
+        });
+      });
+
+      // Update regular labels with new positions and sizes
       labels
         .attr('transform', d => {
           const angle = (d.x0 + d.x1) / 2;
@@ -861,12 +1053,8 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
           // Hide cluster node labels (keep category labels)
           if (d.data._isCluster) return '';
 
-          // At root view: only show root (depth 0) and first circle (depth 1) labels
-          if (focus === root) {
-            if (d.depth > 1) return ''; // Hide depth 2+ at root view
-          } else {
-            // When zoomed in: only show labels for focus and its direct children
-            // Calculate relative depth from focus
+          // When zoomed in: only show labels for focus and its direct children
+          if (focus !== root) {
             const relativeDepth = d.depth - focus.depth;
             if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
             if (relativeDepth < 0) return ''; // Hide ancestors
