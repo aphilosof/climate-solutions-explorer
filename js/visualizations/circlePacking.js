@@ -152,9 +152,71 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
   let zoomScale = 1;  // Geometric zoom scale
   let isScrollZoomMode = false;  // Track scroll zoom vs click zoom mode
 
+  // Momentum panning variables
+  let velocityX = 0;
+  let velocityY = 0;
+  let lastMoveTime = 0;
+  let lastMoveX = 0;
+  let lastMoveY = 0;
+  let momentumAnimationFrame = null;
+
+  // Scroll throttling variables
+  let scrollPending = false;
+  let pendingScrollDelta = 0;
+
   // Main group - centered
   const g = svg.append('g')
     .attr('transform', `translate(${width/2},${height/2})`);
+
+  // Add zoom level indicator
+  const zoomIndicator = svg.append('g')
+    .attr('class', 'zoom-indicator')
+    .attr('transform', `translate(${width - 80}, ${height - 40})`)
+    .style('opacity', 0);
+
+  zoomIndicator.append('rect')
+    .attr('width', 70)
+    .attr('height', 30)
+    .attr('rx', 5)
+    .style('fill', 'rgba(0, 0, 0, 0.7)')
+    .style('stroke', 'rgba(255, 255, 255, 0.3)')
+    .style('stroke-width', 1);
+
+  const zoomText = zoomIndicator.append('text')
+    .attr('x', 35)
+    .attr('y', 20)
+    .attr('text-anchor', 'middle')
+    .style('fill', 'white')
+    .style('font-size', '14px')
+    .style('font-weight', 'bold')
+    .style('pointer-events', 'none')
+    .text('1.0x');
+
+  let zoomIndicatorTimer = null;
+
+  // Function to show zoom indicator with auto-fade
+  function showZoomIndicator(zoomLevel) {
+    // Clear any existing timer
+    if (zoomIndicatorTimer) {
+      clearTimeout(zoomIndicatorTimer);
+    }
+
+    // Update text and show indicator
+    zoomText.text(`${zoomLevel.toFixed(1)}x`);
+    zoomIndicator
+      .interrupt()
+      .transition()
+      .duration(150)
+      .style('opacity', 1);
+
+    // Auto-hide after 1.5 seconds
+    zoomIndicatorTimer = setTimeout(() => {
+      zoomIndicator
+        .transition()
+        .duration(300)
+        .style('opacity', 0);
+    }, 1500);
+  }
 
   // Create circles
   const node = g.selectAll('circle')
@@ -358,6 +420,41 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     }
   });
 
+  // Double-click on background to zoom out
+  svg.on('dblclick', (event) => {
+    event.preventDefault();
+    if (event.target === svg.node()) {
+      // Double-click background: zoom out to root
+      zoom(event, root);
+    }
+  });
+
+  // Add double-click handling to nodes (alternative to single click)
+  node.on('dblclick', function(event, d) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Double-click on node: zoom in or out depending on current focus
+    const sidePanel = document.getElementById('sidePanel');
+    const hasChildren = d.children && d.children.length > 0;
+    const items = d.data?.urls || d.data?.content || d.data?.items || [];
+
+    if (hasChildren) {
+      // Parent node: zoom in
+      if (focus !== d) {
+        zoom(event, d);
+      } else {
+        // Already focused: zoom out to parent
+        if (d.parent) {
+          zoom(event, d.parent);
+        }
+      }
+    } else if (items && items.length > 0) {
+      // Leaf node: open side panel
+      showSidePanel(sidePanel, d);
+    }
+  });
+
   // Add drag/pan functionality with middle mouse button OR Cmd/Ctrl + drag (trackpad-friendly)
   let isDragging = false;
   let wasDragging = false;
@@ -372,6 +469,19 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
       isDragging = true;
       wasDragging = false;
       svg.style('cursor', 'grabbing');
+
+      // Cancel any momentum animation when starting new drag
+      if (momentumAnimationFrame) {
+        cancelAnimationFrame(momentumAnimationFrame);
+        momentumAnimationFrame = null;
+      }
+
+      // Initialize velocity tracking
+      velocityX = 0;
+      velocityY = 0;
+      lastMoveTime = Date.now();
+      lastMoveX = event.clientX;
+      lastMoveY = event.clientY;
     }
   });
 
@@ -379,6 +489,18 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     if (isDragging) {
       wasDragging = true;  // Mark that we actually moved while dragging
       isScrollZoomMode = true;  // Enter scroll zoom mode for panning
+
+      // Calculate velocity for momentum
+      const now = Date.now();
+      const dt = now - lastMoveTime;
+      if (dt > 0) {
+        velocityX = (event.clientX - lastMoveX) / dt * 16; // Normalize to ~60fps
+        velocityY = (event.clientY - lastMoveY) / dt * 16;
+      }
+      lastMoveTime = now;
+      lastMoveX = event.clientX;
+      lastMoveY = event.clientY;
+
       panX += event.movementX;
       panY += event.movementY;
       zoomTo(view);
@@ -395,9 +517,44 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
         setTimeout(() => {
           wasDragging = false;
         }, 100);
+
+        // Apply momentum if velocity is significant
+        const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+        if (speed > 0.5) {
+          applyMomentum();
+        }
       }
     }
   });
+
+  // Momentum animation with decay
+  function applyMomentum() {
+    const friction = 0.92; // Decay factor (0-1, higher = less friction)
+    const minSpeed = 0.1; // Stop when velocity is below this
+
+    function animate() {
+      // Apply velocity to pan
+      panX += velocityX;
+      panY += velocityY;
+
+      // Apply friction (exponential decay)
+      velocityX *= friction;
+      velocityY *= friction;
+
+      // Update view
+      zoomTo(view);
+
+      // Continue if still moving
+      const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+      if (speed > minSpeed) {
+        momentumAnimationFrame = requestAnimationFrame(animate);
+      } else {
+        momentumAnimationFrame = null;
+      }
+    }
+
+    momentumAnimationFrame = requestAnimationFrame(animate);
+  }
 
   svg.on('mouseleave', () => {
     if (isDragging) {
@@ -414,6 +571,12 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
 
   svg.on('wheel', function(event) {
     event.preventDefault();
+
+    // Cancel any momentum animation when scrolling
+    if (momentumAnimationFrame) {
+      cancelAnimationFrame(momentumAnimationFrame);
+      momentumAnimationFrame = null;
+    }
 
     // If transitioning from click zoom to scroll zoom, normalize the view
     // This prevents "stuck" scroll zoom when focused on small nodes
@@ -441,25 +604,52 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     if (event.shiftKey) {
       // Shift + scroll: pan vertically
       panY -= event.deltaY * 0.5;
-      zoomTo(view);
+      applyScrollChange();
     } else if (event.ctrlKey || event.metaKey) {
       // Ctrl/Cmd + scroll: pan horizontally
       panX -= event.deltaY * 0.5;
-      zoomTo(view);
+      applyScrollChange();
     } else {
       // Normal scroll: zoom with limits
-      const oldScale = zoomScale;
-      if (event.deltaY < 0) {
-        zoomScale = Math.min(MAX_ZOOM, zoomScale * ZOOM_STEP);
-      } else {
-        zoomScale = Math.max(MIN_ZOOM, zoomScale / ZOOM_STEP);
-      }
-      // Only update if scale actually changed (not at limits)
-      if (zoomScale !== oldScale) {
-        zoomTo(view);
+      // Accumulate scroll delta for throttling
+      pendingScrollDelta += event.deltaY;
+
+      if (!scrollPending) {
+        scrollPending = true;
+        requestAnimationFrame(() => {
+          const oldScale = zoomScale;
+
+          // Apply accumulated scroll
+          if (pendingScrollDelta < 0) {
+            zoomScale = Math.min(MAX_ZOOM, zoomScale * Math.pow(ZOOM_STEP, Math.abs(pendingScrollDelta) / 100));
+          } else {
+            zoomScale = Math.max(MIN_ZOOM, zoomScale / Math.pow(ZOOM_STEP, Math.abs(pendingScrollDelta) / 100));
+          }
+
+          // Only update if scale actually changed (not at limits)
+          if (zoomScale !== oldScale) {
+            zoomTo(view);
+            showZoomIndicator(zoomScale);
+          }
+
+          // Reset throttle state
+          scrollPending = false;
+          pendingScrollDelta = 0;
+        });
       }
     }
   });
+
+  // Helper function for non-zoom scroll changes (panning)
+  function applyScrollChange() {
+    if (!scrollPending) {
+      scrollPending = true;
+      requestAnimationFrame(() => {
+        zoomTo(view);
+        scrollPending = false;
+      });
+    }
+  }
 
 
   // Initialize
@@ -479,6 +669,9 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
 
       // Update SVG size
       svg.attr('width', width).attr('height', height);
+
+      // Reposition zoom indicator
+      zoomIndicator.attr('transform', `translate(${width - 80}, ${height - 40})`);
 
       // Update pack layout size and re-apply
       pack.size([diameter - 4, diameter - 4]);
