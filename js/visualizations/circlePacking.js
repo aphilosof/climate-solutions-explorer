@@ -407,8 +407,35 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
   });
 
   // Add scroll wheel zoom/pan
+  // Zoom limits for smoother experience
+  const MIN_ZOOM = 0.5;   // Don't zoom out too far
+  const MAX_ZOOM = 10;    // Don't zoom in too much
+  const ZOOM_STEP = 1.05; // Smaller increment for smoother scroll zoom (was 1.1)
+
   svg.on('wheel', function(event) {
     event.preventDefault();
+
+    // If transitioning from click zoom to scroll zoom, normalize the view
+    // This prevents "stuck" scroll zoom when focused on small nodes
+    if (!isScrollZoomMode) {
+      // Calculate current visual scale
+      const currentK = diameter / view[2];
+
+      // Switch to root-based view for scroll zoom
+      const rootViewSize = root.r * 2;
+
+      // Adjust zoomScale to maintain current visual scale
+      // currentK = (diameter / rootViewSize) * zoomScale
+      // So: zoomScale = currentK * rootViewSize / diameter
+      zoomScale = currentK * rootViewSize / diameter;
+
+      // Clamp to zoom limits
+      zoomScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomScale));
+
+      // Keep current view center (focus position) but use root-based window size
+      view = [focus.x, focus.y, rootViewSize];
+    }
+
     isScrollZoomMode = true;  // Enter scroll zoom mode
 
     if (event.shiftKey) {
@@ -420,13 +447,17 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
       panX -= event.deltaY * 0.5;
       zoomTo(view);
     } else {
-      // Normal scroll: zoom
+      // Normal scroll: zoom with limits
+      const oldScale = zoomScale;
       if (event.deltaY < 0) {
-        zoomScale *= 1.1;
+        zoomScale = Math.min(MAX_ZOOM, zoomScale * ZOOM_STEP);
       } else {
-        zoomScale /= 1.1;
+        zoomScale = Math.max(MIN_ZOOM, zoomScale / ZOOM_STEP);
       }
-      zoomTo(view);
+      // Only update if scale actually changed (not at limits)
+      if (zoomScale !== oldScale) {
+        zoomTo(view);
+      }
     }
   });
 
@@ -575,7 +606,8 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     panY = 0;
 
     const transition = svg.transition()
-      .duration(event && event.altKey ? 7500 : 750)
+      .duration(event && event.altKey ? 7500 : 1200) // Slower transition for smoother feel (was 750ms)
+      .ease(d3.easeCubicInOut) // Smooth easing for less abrupt transitions
       .tween('zoom', () => {
         const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
         return t => zoomTo(i(t));
