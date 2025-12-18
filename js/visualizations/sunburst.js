@@ -535,69 +535,80 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       });
     });
 
-  // Add regular text labels for non-depth-1 arcs
+  // Add regular text labels for non-depth-1 arcs (curved along arc paths)
+  const regularLabelsData = root.descendants().filter(d => d.depth > 1);
+
+  // Create text paths for regular labels
+  regularLabelsData.forEach((d, i) => {
+    const midRadius = (d.y0 + d.y1) / 2;
+    defs.append('path')
+      .attr('id', `regularTextPath-${i}`)
+      .attr('d', createTextPath(d, midRadius))
+      .style('fill', 'none')
+      .style('stroke', 'none');
+  });
+
   const labels = g.selectAll('.regular-label')
-    .data(root.descendants().filter(d => d.depth > 1))
+    .data(regularLabelsData)
     .join('text')
     .attr('class', 'regular-label')
-    .attr('transform', d => {
-      // Calculate arc centroid for text position
-      const angle = (d.x0 + d.x1) / 2;
-      const r = (d.y0 + d.y1) / 2;
-      const x = Math.sin(angle) * r;
-      const y = -Math.cos(angle) * r;
-
-      // Rotate text to align with arc
-      // Flip text on left side for readability
-      const rotation = (angle * 180 / Math.PI - 90);
-      const finalRotation = rotation > 90 ? rotation + 180 : rotation;
-
-      return `translate(${x},${y}) rotate(${finalRotation})`;
-    })
-    .attr('text-anchor', 'middle')
-    .attr('dy', '0.35em')
-    .style('font-size', d => {
-      // Font size based on radial depth and angular width
-      const arcWidth = (d.x1 - d.x0) * radius;
-      const arcHeight = d.y1 - d.y0;
-      return Math.max(8, Math.min(14, Math.min(arcWidth / 6, arcHeight / 3))) + 'px';
-    })
     .style('fill', 'white')
     .style('pointer-events', 'none')
     .style('user-select', 'none')
     .style('font-weight', '500')
     .style('opacity', focus === root ? 0 : 1) // Hide at root view, show when zoomed
-    .text(d => {
-      // Hide cluster node labels (keep category labels)
-      if (d.data._isCluster) return '';
+    .each(function(d, i) {
+      // Always create the textPath element, but leave it empty initially if at root
+      const textPath = d3.select(this)
+        .append('textPath')
+        .attr('xlink:href', `#regularTextPath-${i}`)
+        .attr('startOffset', '50%')
+        .attr('text-anchor', 'middle');
 
-      // At root view, hide all regular labels (only curved depth-1 labels show)
-      if (focus === root) return '';
+      // Determine if label should be visible
+      if (d.data._isCluster || focus === root) {
+        textPath.text('');
+        return;
+      }
 
       // When zoomed in: only show labels for focus and its direct children
       const relativeDepth = d.depth - focus.depth;
-      if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
-      if (relativeDepth < 0) return ''; // Hide ancestors
+      if (relativeDepth > 1 || relativeDepth < 0) {
+        textPath.text('');
+        return;
+      }
 
       // Only show text if arc is large enough
       const arcAngle = d.x1 - d.x0;
       const arcHeight = d.y1 - d.y0;
 
-      if (arcAngle < 0.05 || arcHeight < 15) return ''; // Too small
+      if (arcAngle < 0.05 || arcHeight < 15) {
+        textPath.text('');
+        return;
+      }
 
       const name = d.data.name || d.data.entity_name || '';
+      const midRadius = (d.y0 + d.y1) / 2;
+
+      // Calculate font size
+      const arcWidth = arcAngle * midRadius;
+      const fontSize = Math.max(8, Math.min(14, Math.min(arcWidth / 6, arcHeight / 3)));
 
       // Truncate text to fit arc width
-      const arcWidth = arcAngle * radius;
-      const fontSize = Math.max(8, Math.min(14, Math.min(arcWidth / 6, arcHeight / 3)));
-      const charWidth = fontSize * 0.6;
-      const maxChars = Math.floor(arcWidth / charWidth);
-
-      if (maxChars < 3) return '';
-      if (name.length > maxChars) {
-        return name.substring(0, maxChars - 1) + '…';
+      const charWidth = fontSize * 0.5;
+      const maxChars = Math.floor((arcWidth * 0.9) / charWidth);
+      let displayText = name;
+      if (maxChars < 3) {
+        textPath.text('');
+        return;
       }
-      return name;
+      if (name.length > maxChars) {
+        displayText = name.substring(0, maxChars - 1) + '…';
+      }
+
+      // Set font size and text
+      d3.select(this).style('font-size', fontSize + 'px');
+      textPath.text(displayText);
     });
 
   // Setup tooltip click handler to open side panel
@@ -878,63 +889,57 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         return isFocusPath ? 1 : 0;
       });
 
-    // Update regular labels during zoom transition - use TARGET positions
-    labels
-      .style('font-size', d => {
-        // Calculate based on TARGET arc size (after zoom)
-        const arcWidth = (d.targetX1 - d.targetX0) * radius;
-        const arcHeight = d.targetY1 - d.targetY0;
-        // Use larger font sizes when zoomed in (based on scale)
-        const maxFont = p === root ? 14 : Math.min(18, 14 * Math.sqrt(scale));
-        return Math.max(8, Math.min(maxFont, Math.min(arcWidth / 6, arcHeight / 3))) + 'px';
-      })
-      .text(d => {
-        // Hide cluster node labels (keep category labels)
-        if (d.data._isCluster) return '';
+    // Update regular labels during zoom transition - recreate curved text paths
+    labels.each(function(d, i) {
+      // Update the text path in defs with target positions
+      const midRadius = (d.targetY0 + d.targetY1) / 2;
 
-        // When zoomed in: only show labels for focus and its direct children
-        if (p !== root) {
-          const relativeDepth = d.depth - p.depth;
-          if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
-          if (relativeDepth < 0) return ''; // Hide ancestors
-        }
+      // Create temporary data object with target positions for path generation
+      const targetData = {
+        x0: d.targetX0,
+        x1: d.targetX1,
+        y0: d.targetY0,
+        y1: d.targetY1
+      };
 
-        // Calculate visibility based on TARGET arc size (after zoom)
-        const arcAngle = d.targetX1 - d.targetX0;
-        const arcHeight = d.targetY1 - d.targetY0;
+      defs.select(`#regularTextPath-${i}`)
+        .attr('d', createTextPath(targetData, midRadius));
 
-        // More lenient thresholds when zoomed in
-        const minAngle = p === root ? 0.05 : 0.02;
-        const minHeight = p === root ? 15 : 8;
+      // Update text content and font size
+      const arcAngle = d.targetX1 - d.targetX0;
+      const arcHeight = d.targetY1 - d.targetY0;
 
-        if (arcAngle < minAngle || arcHeight < minHeight) return '';
+      // More lenient thresholds when zoomed in
+      const minAngle = p === root ? 0.05 : 0.02;
+      const minHeight = p === root ? 15 : 8;
 
-        const name = d.data.name || d.data.entity_name || '';
-        const arcWidth = arcAngle * radius;
-        const maxFont = p === root ? 14 : Math.min(18, 14 * Math.sqrt(scale));
-        const fontSize = Math.max(8, Math.min(maxFont, Math.min(arcWidth / 6, arcHeight / 3)));
-        const charWidth = fontSize * 0.6;
-        const maxChars = Math.floor(arcWidth / charWidth);
+      const isVisible = !d.data._isCluster && arcAngle >= minAngle && arcHeight >= minHeight;
 
-        if (maxChars < 3) return '';
-        if (name.length > maxChars) {
-          return name.substring(0, maxChars - 1) + '…';
-        }
-        return name;
-      })
-      .transition(transition)
-      .attr('transform', d => {
-        // Animate to target position
-        const angle = (d.targetX0 + d.targetX1) / 2;
-        const r = (d.targetY0 + d.targetY1) / 2;
-        const x = Math.sin(angle) * r;
-        const y = -Math.cos(angle) * r;
+      if (!isVisible) {
+        d3.select(this).selectAll('textPath').text('');
+        return;
+      }
 
-        const rotation = (angle * 180 / Math.PI - 90);
-        const finalRotation = rotation > 90 ? rotation + 180 : rotation;
+      const name = d.data.name || d.data.entity_name || '';
+      const arcWidth = arcAngle * midRadius;
+      const maxFont = p === root ? 14 : Math.min(18, 14 * Math.sqrt(scale));
+      const fontSize = Math.max(8, Math.min(maxFont, Math.min(arcWidth / 6, arcHeight / 3)));
 
-        return `translate(${x},${y}) rotate(${finalRotation})`;
-      });
+      // Truncate text to fit
+      const charWidth = fontSize * 0.5;
+      const maxChars = Math.floor((arcWidth * 0.9) / charWidth);
+      let displayText = name;
+      if (maxChars < 3) {
+        displayText = '';
+      } else if (name.length > maxChars) {
+        displayText = name.substring(0, maxChars - 1) + '…';
+      }
+
+      d3.select(this)
+        .style('font-size', fontSize + 'px')
+        .selectAll('textPath')
+        .text(displayText);
+    });
 
     // Update breadcrumbs when zooming
     updateBreadcrumbsForSunburst(p, root);
@@ -1033,48 +1038,50 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
         });
       });
 
-      // Update regular labels with new positions and sizes
-      labels
-        .attr('transform', d => {
-          const angle = (d.x0 + d.x1) / 2;
-          const r = (d.y0 + d.y1) / 2;
-          const x = Math.sin(angle) * r;
-          const y = -Math.cos(angle) * r;
-          const rotation = (angle * 180 / Math.PI - 90);
-          const finalRotation = rotation > 90 ? rotation + 180 : rotation;
-          return `translate(${x},${y}) rotate(${finalRotation})`;
-        })
-        .style('font-size', d => {
-          const arcWidth = (d.x1 - d.x0) * radius;
-          const arcHeight = d.y1 - d.y0;
-          return Math.max(8, Math.min(14, Math.min(arcWidth / 6, arcHeight / 3))) + 'px';
-        })
-        .text(d => {
-          // Hide cluster node labels (keep category labels)
-          if (d.data._isCluster) return '';
+      // Update regular labels with new curved text paths
+      labels.each(function(d, i) {
+        // Update the text path in defs with new radius
+        const midRadius = (d.y0 + d.y1) / 2;
+        defs.select(`#regularTextPath-${i}`)
+          .attr('d', createTextPath(d, midRadius));
 
-          // When zoomed in: only show labels for focus and its direct children
-          if (focus !== root) {
-            const relativeDepth = d.depth - focus.depth;
-            if (relativeDepth > 1) return ''; // Hide nodes more than 1 level deeper than focus
-            if (relativeDepth < 0) return ''; // Hide ancestors
+        // Recalculate text content and font size
+        const arcAngle = d.x1 - d.x0;
+        const arcHeight = d.y1 - d.y0;
+
+        if (d.data._isCluster || arcAngle < 0.05 || arcHeight < 15) {
+          d3.select(this).selectAll('textPath').text('');
+          return;
+        }
+
+        // When zoomed in: only show labels for focus and its direct children
+        if (focus !== root) {
+          const relativeDepth = d.depth - focus.depth;
+          if (relativeDepth > 1 || relativeDepth < 0) {
+            d3.select(this).selectAll('textPath').text('');
+            return;
           }
+        }
 
-          const arcAngle = d.x1 - d.x0;
-          const arcHeight = d.y1 - d.y0;
+        const name = d.data.name || d.data.entity_name || '';
+        const arcWidth = arcAngle * midRadius;
+        const fontSize = Math.max(8, Math.min(14, Math.min(arcWidth / 6, arcHeight / 3)));
 
-          if (arcAngle < 0.05 || arcHeight < 15) return '';
-          const name = d.data.name || d.data.entity_name || '';
-          const arcWidth = arcAngle * radius;
-          const fontSize = Math.max(8, Math.min(14, Math.min(arcWidth / 6, arcHeight / 3)));
-          const charWidth = fontSize * 0.6;
-          const maxChars = Math.floor(arcWidth / charWidth);
-          if (maxChars < 3) return '';
-          if (name.length > maxChars) {
-            return name.substring(0, maxChars - 1) + '…';
-          }
-          return name;
-        });
+        // Truncate text to fit
+        const charWidth = fontSize * 0.5;
+        const maxChars = Math.floor((arcWidth * 0.9) / charWidth);
+        let displayText = name;
+        if (maxChars < 3) {
+          displayText = '';
+        } else if (name.length > maxChars) {
+          displayText = name.substring(0, maxChars - 1) + '…';
+        }
+
+        d3.select(this)
+          .style('font-size', fontSize + 'px')
+          .selectAll('textPath')
+          .text(displayText);
+      });
 
       // Update center circle radius
       svg.select('circle')
