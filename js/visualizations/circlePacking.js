@@ -143,6 +143,36 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
 
   pack(root);
 
+  // STEP 1: Pre-compute label metadata (performance optimization)
+  // Calculate priority rankings ONCE instead of on every render
+  function initializeLabelMetadata(node) {
+    if (!node.children) return;
+
+    // For each child, compute its priority ranking among siblings
+    const siblings = node.children;
+
+    // Sort siblings by radius (largest first)
+    const sorted = siblings.slice().sort((a, b) => b.r - a.r);
+
+    // Assign priority rank and metadata to each sibling
+    siblings.forEach(sibling => {
+      sibling._labelPriority = sorted.indexOf(sibling); // 0 = largest, 1 = second largest, etc.
+      sibling._siblingCount = siblings.length;
+      sibling._isLeaf = !sibling.children;
+    });
+
+    // Recursively process children
+    siblings.forEach(sibling => initializeLabelMetadata(sibling));
+  }
+
+  // Initialize metadata for entire tree
+  initializeLabelMetadata(root);
+
+  // Create canvas for measuring actual text width
+  // CRITICAL: Must measure at actual visual font size (fontSize * k) since SVG text is inside scale(k) transform
+  const textMeasureCanvas = document.createElement('canvas');
+  const textMeasureCtx = textMeasureCanvas.getContext('2d');
+
   let focus = root;
   let view;
   let frozenTooltipNode = null;  // Track WHICH node tooltip is frozen for
@@ -651,7 +681,6 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     }
   }
 
-
   // Initialize
   zoomTo([root.x, root.y, root.r * 2]);
 
@@ -682,6 +711,42 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     }, 150); // Debounce resize events
   });
 
+  // STEP 2: Unified label visibility function
+  // Single decision function that works for ALL zoom modes (scroll, click, drag)
+  // Uses pre-computed metadata for fast, consistent decisions
+  function shouldShowLabel(d, focusNode, k, viewCenter, viewportDiameter) {
+    // Never show root label
+    if (d === root) return false;
+
+    // Only show direct children of focus
+    if (d.parent !== focusNode) return false;
+
+    // Calculate effective visual radius
+    const effRadius = d.r * k;
+
+    // Minimum size threshold (different for leaves vs parents)
+    // Leaves: 18px minimum, Parents: 20px minimum (relaxed to show more labels)
+    const minRadius = d._isLeaf ? 18 : 20;
+    if (effRadius < minRadius) return false;
+
+    // Viewport bounds checking - relaxed for circle packing circular distribution
+    // In circle packing, children naturally spread in a circle around center
+    const dx = d.x - viewCenter[0];
+    const dy = d.y - viewCenter[1];
+    const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+    const distanceInPixels = distanceFromCenter * k;  // Convert to pixel coordinates
+    const viewportThreshold = viewportDiameter * 0.50;  // 50% threshold (was 35%)
+    if (distanceInPixels >= viewportThreshold) return false;
+
+    // Priority culling (top 12 largest siblings) - increased to show more main categories
+    // Uses pre-computed priority from Step 1
+    const maxLabels = 12;
+    if (d._labelPriority >= maxLabels) return false;
+
+    // All criteria met - show label
+    return true;
+  }
+
   function zoomTo(v) {
     const k = (diameter / v[2]) * zoomScale;  // Apply geometric zoom scale
     view = v;
@@ -699,96 +764,183 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
       .attr('transform', d => `translate(${d.x},${d.y})`)
       .attr('r', d => d.r);
 
-    // Update labels - Different logic for click zoom vs scroll zoom
+    // STEP 3: Unified label rendering - same logic for all zoom modes
     let shownLabels = 0;
-
-    // Determine target depth for scroll zoom based on zoom level
-    // k=1 → depth 1, k=2 → depth 2, k=4 → depth 3, etc.
-    const targetDepth = isScrollZoomMode
-      ? Math.min(Math.max(1, Math.floor(Math.log2(k)) + 1), root.height)
-      : null;
-
-    console.log(`Mode: ${isScrollZoomMode ? 'SCROLL' : 'CLICK'}, k=${k.toFixed(2)}, targetDepth=${targetDepth}`);
-
-    // Only interrupt transitions in scroll mode (click mode needs smooth opacity transitions)
-    if (isScrollZoomMode) {
-      label.interrupt();
-    }
+    let hiddenByCollision = 0;
+    const labelBoundingBoxes = []; // Track shown labels for collision detection
 
     label
       .attr('transform', d => `translate(${d.x},${d.y})`)
       .each(function(d) {
         const element = d3.select(this);
         const name = d.data.name || d.data.entity_name || '';
-        const isLeaf = !d.children;
+
+        // UNIFIED: Single call to shouldShowLabel() for all modes (scroll, click, pan, drag)
+        let shouldShow = shouldShowLabel(d, focus, k, view, diameter);
+
+        // COLLISION DETECTION: Check if this label would overlap with already-shown labels
+        if (shouldShow) {
+          const nodeEffRadius = d.r * k;
+
+          // CONTEXT-AWARE FONT SIZING: Adapts to actual local spacing between circles
+          // Calculate distance to nearest sibling to determine available space
+          let minDistance = Infinity;
+          const siblings = d.parent.children;
+          for (const sibling of siblings) {
+            if (sibling === d) continue;
+            const dx = sibling.x - d.x;
+            const dy = sibling.y - d.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const gap = distance - d.r - sibling.r; // Actual gap between circle edges
+            if (gap < minDistance) {
+              minDistance = gap;
+            }
+          }
+
+          // SMART ADAPTIVE SIZING: Use geometric mean of gap and circle size
+          // This naturally balances both constraints without arbitrary multipliers:
+          // - Large circle + large gap = large font
+          // - Small circle + small gap = small font
+          // - Mismatched sizes = intermediate font
+          const visualGap = minDistance * k;
+          const fontSizeFromMean = Math.sqrt(visualGap * nodeEffRadius);
+
+          // Apply only readability bounds (min/max for legibility)
+          const maxVisualFontSize = Math.max(10, Math.min(20, fontSizeFromMean));
+          const fontSize = maxVisualFontSize / k; // Convert back to data coordinates
+
+          // Calculate what text will actually be displayed (same logic as rendering)
+          const availableWidth = nodeEffRadius * 2 * 0.75;
+          const charWidth = fontSize * 0.55;
+          const maxChars = Math.floor(availableWidth / charWidth);
+          const displayedText = name.length <= maxChars ? name : name.substring(0, maxChars - 1) + '…';
+
+          // MEASURE ACTUAL rendered width using canvas (accounts for font metrics, bold, stroke)
+          // CRITICAL: SVG text is inside scale(k) transform, so visual font size is fontSize * k
+          const visualFontSize = fontSize * k;  // Calculate visual font size
+          textMeasureCtx.font = `600 ${visualFontSize}px sans-serif`;  // Match actual visual font size
+          const textMetrics = textMeasureCtx.measureText(displayedText);
+          const visualTextWidth = textMetrics.width;  // Visual pixel width BEFORE division
+          const actualTextWidth = visualTextWidth / k;  // Convert visual pixels back to data coordinates
+
+          // Add safety margin for stroke width (0.4px stroke on both sides = +0.8px, plus extra for safety)
+          // CRITICAL: actualTextWidth is ALREADY in data coordinates (visualTextWidth / k)
+          // Don't divide by k again! Use directly for bounding box.
+          const strokePadding = fontSize * 0.15;  // Padding in data coordinates (fontSize is data-space)
+          const estimatedWidth = actualTextWidth + strokePadding;  // Total width in data coordinates
+          const labelHeight = fontSize * 1.5;  // Height in data coordinates
+
+          // These values are ALREADY in data coordinates - use directly!
+          const widthInData = estimatedWidth;
+          const heightInData = labelHeight;
+
+          // Label bounding box in DATA coordinates (where d.x and d.y live)
+          const labelBox = {
+            x: d.x - widthInData / 2,
+            y: d.y - heightInData / 2,
+            width: widthInData,
+            height: heightInData,
+            name: name  // DEBUG: track which label this is
+          };
+
+          // Check collision with existing labels (all in data coordinates)
+          const hasCollision = labelBoundingBoxes.some(box => {
+            const overlaps = !(labelBox.x + labelBox.width < box.x ||
+                     labelBox.x > box.x + box.width ||
+                     labelBox.y + labelBox.height < box.y ||
+                     labelBox.y > box.y + box.height);
+            return overlaps;
+          });
+
+          if (hasCollision) {
+            shouldShow = false;
+            hiddenByCollision++;
+          } else {
+            // No collision - add to tracking array
+            labelBoundingBoxes.push(labelBox);
+          }
+        }
+
+        // Update visibility immediately for instant feedback
+        if (shouldShow) {
+          element.style('display', 'inline');
+          element.style('fill-opacity', 1);
+          shownLabels++;
+        } else {
+          element.style('display', 'none');
+          element.style('fill-opacity', 0);
+        }
+
+        // Skip rendering if this label shouldn't be shown (prevents ghost labels)
+        if (!shouldShow) {
+          element.selectAll('tspan').remove();
+          element.text('');
+          return;
+        }
+
+        // SMART LABEL RENDERING - Calculate what fits, no arbitrary thresholds
+        // Fast calculations for smooth zoom/rendering
 
         // Calculate effective visual radius
         const nodeEffRadius = d.r * k;
 
-        let shouldShow = false;
-
-        if (isScrollZoomMode) {
-          // SCROLL ZOOM MODE: Show ALL nodes at target depth that are large enough
-          if (d.depth === targetDepth && nodeEffRadius > 30) {
-            shouldShow = true;
+        // CONTEXT-AWARE FONT SIZING: Adapts to actual local spacing (matches collision detection)
+        // Calculate distance to nearest sibling to determine available space
+        let minDistance = Infinity;
+        const siblings = d.parent.children;
+        for (const sibling of siblings) {
+          if (sibling === d) continue;
+          const dx = sibling.x - d.x;
+          const dy = sibling.y - d.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const gap = distance - d.r - sibling.r; // Actual gap between circle edges
+          if (gap < minDistance) {
+            minDistance = gap;
           }
+        }
+
+        // SMART ADAPTIVE SIZING: Use geometric mean of gap and circle size (matches collision detection)
+        const visualGap = minDistance * k;
+        const fontSizeFromMean = Math.sqrt(visualGap * nodeEffRadius);
+        const maxVisualFontSize = Math.max(10, Math.min(20, fontSizeFromMean));
+        const fontSize = maxVisualFontSize / k; // Convert back to data coordinates
+
+        // Calculate available space using VISUAL radius (not data radius!)
+        // Use 75% of diameter to keep text well within circle boundaries
+        const availableWidth = nodeEffRadius * 2 * 0.75;
+        const charWidth = fontSize * 0.55;
+        const maxChars = Math.floor(availableWidth / charWidth);
+
+        // Hide if nothing meaningful fits (< 4 chars)
+        if (maxChars < 4) {
+          element.selectAll('tspan').remove();
+          element.text('');
+          return;
+        }
+
+        // Strategy 6: Smart Text Truncation - ALWAYS single line, no wrapping
+        // Professional, clean look with predictable sizing
+        let displayText;
+        if (name.length <= maxChars) {
+          // Full text fits
+          displayText = name;
         } else {
-          // CLICK ZOOM MODE: Observable pattern - show ONLY children of focus
-          if (d.parent === focus) {
-            if (isLeaf) {
-              // Leaf nodes: show if large enough
-              shouldShow = nodeEffRadius > 15;
-            } else {
-              // Parent nodes: always show when they're children of focus
-              shouldShow = true;
-            }
-          }
+          // Truncate with ellipsis
+          displayText = name.substring(0, maxChars - 1) + '…';
         }
 
-        // Only manage display/opacity in scroll zoom mode
-        // In click zoom mode, let the transition handle it to avoid conflicts
-        if (isScrollZoomMode) {
-          if (shouldShow) {
-            element.style('display', 'inline');
-            element.style('fill-opacity', 1);
-            console.log(`  SHOWING label: "${name}" (depth=${d.depth}, effRadius=${nodeEffRadius.toFixed(1)})`);
-            shownLabels++;
-          } else {
-            element.style('display', 'none');
-            element.style('fill-opacity', 0);
-          }
-        } else {
-          // Click zoom mode: just track which should show (transition handles visibility)
-          if (shouldShow) {
-            console.log(`  SHOULD SHOW label: "${name}" (depth=${d.depth}, effRadius=${nodeEffRadius.toFixed(1)})`);
-            shownLabels++;
-          }
-        }
+        // Clear existing text and tspans
+        element.selectAll('tspan').remove();
+        element.text('');
 
-        // Dynamic font sizing - small but legible
-        const fontSize = isLeaf
-          ? Math.max(1, Math.min(3, d.r / 12))   // Leaf: 1-3px legible
-          : Math.max(5, Math.min(10, d.r / 4.5)); // Parent: unchanged
-
-        // VERY aggressive truncation for leaves to fit in circles
-        const charWidth = fontSize * 0.7;
-        const maxWidth = isLeaf ? d.r * 0.8 : d.r * 1.6;  // Leaves: only 40% of diameter!
-        const maxChars = Math.floor(maxWidth / charWidth);
-
-        // Truncate to fit
-        let displayText = name;
-        if (maxChars < 2) {
-          displayText = '';
-        } else if (name.length > maxChars) {
-          displayText = name.substring(0, Math.max(1, maxChars - 1)) + '.';
-        }
-
+        // Apply professional styling - MUST match canvas font for collision detection
         element
+          .style('font-family', 'sans-serif')  // CRITICAL: match canvas measurement font
           .style('font-size', fontSize + 'px')
+          .style('font-weight', '600') // Always bold for parent nodes
+          .style('text-anchor', 'middle')
           .text(displayText);
       });
-
-    console.log(`>>> Total labels shown in zoomTo: ${shownLabels}`);
   }
 
   function zoom(event, d) {
@@ -799,31 +951,25 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     panY = 0;
 
     const transition = svg.transition()
-      .duration(event && event.altKey ? 7500 : 1200) // Slower transition for smoother feel (was 750ms)
+      .duration(event && event.altKey ? 7500 : 750) // Fast direct transition (was 1200ms)
       .ease(d3.easeCubicInOut) // Smooth easing for less abrupt transitions
       .tween('zoom', () => {
-        const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
+        // Direct interpolation - no intermediate zoom out/in
+        const i = d3.interpolate(view, [focus.x, focus.y, focus.r * 2]);
         return t => zoomTo(i(t));
       });
 
-    // Observable pattern: manage label visibility
+    // STEP 5: Unified transition - use same shouldShowLabel() function
     label
       .filter(function(d) {
         return d.parent === focus || this.style.display === 'inline';
       })
       .transition(transition)
       .style('fill-opacity', d => {
-        // Show labels for ALL direct children of focus (including leaf nodes)
-        if (d.parent === focus) {
-          // For leaf nodes (no children), only show if circle is large enough
-          if (!d.children) {
-            const k = diameter / (focus.r * 2);  // Pure hierarchical zoom (zoomScale already reset to 1)
-            const effRadius = d.r * k;
-            return effRadius > 15 ? 1 : 0;  // Very small threshold for leaf labels
-          }
-          return 1;  // Always show parent node labels
-        }
-        return 0;
+        // Use unified label visibility function
+        const k = diameter / (focus.r * 2);
+        const viewCenter = [focus.x, focus.y];
+        return shouldShowLabel(d, focus, k, viewCenter, diameter) ? 1 : 0;
       })
       .on('start', function(d) {
         if (d.parent === focus) this.style.display = 'inline';
@@ -896,4 +1042,9 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     window._circlePackingCleanup();
   }
   window._circlePackingCleanup = cleanup;
+
+  // Show home button for navigation
+  if (window.showHomeButton) {
+    window.showHomeButton();
+  }
 }
