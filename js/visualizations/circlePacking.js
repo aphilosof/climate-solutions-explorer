@@ -190,14 +190,16 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
   let lastMoveY = 0;
   let momentumAnimationFrame = null;
 
-  // Scroll throttling variables
-  let scrollPending = false;
-  let pendingScrollDelta = 0;
+  // Scroll throttling variables (DISABLED - uncomment when re-enabling scroll zoom)
+  // let scrollPending = false;
+  // let pendingScrollDelta = 0;
 
   // Main group - centered
   const g = svg.append('g')
     .attr('transform', `translate(${width/2},${height/2})`);
 
+  // DISABLED - Zoom level indicator (uncomment when re-enabling scroll zoom)
+  /*
   // Add zoom level indicator
   const zoomIndicator = svg.append('g')
     .attr('class', 'zoom-indicator')
@@ -223,8 +225,10 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     .text('1.0x');
 
   let zoomIndicatorTimer = null;
+  */
 
-  // Function to show zoom indicator with auto-fade
+  // DISABLED - Function to show zoom indicator with auto-fade (uncomment when re-enabling scroll zoom)
+  /*
   function showZoomIndicator(zoomLevel) {
     // Clear any existing timer
     if (zoomIndicatorTimer) {
@@ -247,6 +251,7 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
         .style('opacity', 0);
     }, 1500);
   }
+  */
 
   // Create circles
   const node = g.selectAll('circle')
@@ -593,6 +598,9 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
     }
   });
 
+  // SCROLL ZOOM DISABLED - Commenting out due to issues
+  // Uncomment to re-enable scroll wheel zoom/pan functionality
+  /*
   // Add scroll wheel zoom/pan
   // Zoom limits for smoother experience
   const MIN_ZOOM = 0.5;   // Don't zoom out too far
@@ -680,6 +688,7 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
       });
     }
   }
+  */
 
   // Initialize
   zoomTo([root.x, root.y, root.r * 2]);
