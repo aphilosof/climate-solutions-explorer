@@ -785,13 +785,16 @@ function renderVisualization() {
           break;
       }
 
-      // Show the home and up buttons after rendering visualization
+      // DISABLED - Show the home and up buttons after rendering visualization
+      // Uncomment to re-enable home and up arrow navigation buttons
+      /*
       if (window.showHomeButton) {
         window.showHomeButton();
       }
       if (window.showUpButton) {
         window.showUpButton();
       }
+      */
 
       updateSearchInfo(filteredData);
 

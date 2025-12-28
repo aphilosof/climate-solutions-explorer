@@ -708,8 +708,8 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
       // Update SVG size
       svg.attr('width', width).attr('height', height);
 
-      // Reposition zoom indicator
-      zoomIndicator.attr('transform', `translate(${width - 80}, ${height - 40})`);
+      // DISABLED - Reposition zoom indicator (uncomment when re-enabling scroll zoom)
+      // zoomIndicator.attr('transform', `translate(${width - 80}, ${height - 40})`);
 
       // Update pack layout size and re-apply
       pack.size([diameter - 4, diameter - 4]);
@@ -1052,8 +1052,11 @@ export function renderCirclePacking(data, showTooltip, hideTooltip) {
   }
   window._circlePackingCleanup = cleanup;
 
-  // Show home button for navigation
+  // DISABLED - Show home button for navigation
+  // Uncomment to re-enable home button
+  /*
   if (window.showHomeButton) {
     window.showHomeButton();
   }
+  */
 }
