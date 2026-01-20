@@ -1,11 +1,11 @@
 /**
- * dendrogram.js
- * Enhanced Dendrogram (Tree) visualization with sunburst-style zoom and label handling
+ * forceNetwork.js
+ * Dendrogram with physics-based multi-directional layout (not linear, not circular)
  */
 
 import { showSidePanel } from '../utilities.js';
 
-export function renderDendrogram(data, showTooltip, hideTooltip) {
+export function renderForceNetwork(data, showTooltip, hideTooltip) {
   const container = document.getElementById('visualization');
   let width = container.clientWidth;
   let height = container.clientHeight;
@@ -119,16 +119,8 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
     return baseColor;
   }
 
-  // Tree layout - horizontal with dynamic spacing that scales with viewport
-  const tree = d3.tree()
-    .size([innerHeight * 0.9, innerWidth * 0.7])  // Use more of available space
-    .separation((a, b) => {
-      // Dynamic spacing based on viewport height - scales automatically
-      const viewportScale = Math.max(innerHeight / 600, 1); // Scale factor based on viewport
-      const baseSpacing = a.parent === b.parent ? 2.5 : 3.5; // Increased base spacing
-      const depthMultiplier = Math.max(a.depth, b.depth) * 0.8;  // More spacing at deeper levels
-      return (baseSpacing + depthMultiplier) * viewportScale;  // Scales with viewport
-    });
+  // Force simulation for physics-based positioning (replaces tree layout)
+  let simulation = null;
 
   const root = d3.hierarchy(data);
 
@@ -284,44 +276,86 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
   // Initial render
   update(root);
 
-  // Update function - proper D3 tree pattern with enter/exit/update
+  // Update function - physics-based positioning with all dendrogram features
   function update(source) {
-    // Recalculate tree layout
-    const treeData = tree(root);
-    let nodes = treeData.descendants();
-    let links = treeData.links();
+    // Get nodes and links from hierarchy
+    let nodes = root.descendants();
+    let links = root.links();
 
     // Filter out nodes hidden by sibling selection
     nodes = nodes.filter(d => !d._hiddenBySiblingSelection);
     links = links.filter(d => !d.source._hiddenBySiblingSelection && !d.target._hiddenBySiblingSelection);
 
-    // Calculate initial bounds to find maxX
+    // PHYSICS-BASED POSITIONING (not linear, not circular!)
+    // Stop any existing simulation
+    if (simulation) {
+      simulation.stop();
+    }
+
+    // Define proportional radius calculator BEFORE using it in simulation
+    const calculateProportionalRadius = (d) => {
+      if (d.data._isCluster) {
+        const count = d._clusteredLeaves ? d._clusteredLeaves.length : 0;
+        return 15 + Math.sqrt(count) * 2.5;
+      }
+      if (d.depth === 0) {
+        const count = d._descendantCount || 1;
+        return 40 + Math.sqrt(count) * 3;
+      }
+      if (d.depth === 1) {
+        const count = d._descendantCount || 1;
+        return 15 + Math.sqrt(count) * 4;
+      }
+      if (d._children) {
+        const count = d._descendantCount || 1;
+        return 8 + Math.sqrt(count) * 2.5;
+      }
+      return 4;
+    };
+
+    // Initialize positions if not set (use dendrogram coordinate convention: y=horizontal, x=vertical)
+    nodes.forEach(d => {
+      if (d.x === undefined || d.y === undefined) {
+        // Random scatter - no circular pattern!
+        // Note: in dendrogram convention, y is horizontal, x is vertical
+        d.y = innerWidth / 2 + (Math.random() - 0.5) * (innerWidth * 0.8);
+        d.x = innerHeight / 2 + (Math.random() - 0.5) * (innerHeight * 0.8);
+      }
+    });
+
+    // Create force simulation
+    // Note: simulation uses dendrogram coordinate convention (y=horizontal, x=vertical)
+    simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links)
+        .id(d => d.id)
+        .distance(d => 80 + d.target.depth * 40) // Larger distances for more spread
+        .strength(0.5)
+      )
+      .force('charge', d3.forceManyBody()
+        .strength(d => {
+          const size = calculateProportionalRadius(d);
+          return -400 - size * 15; // Stronger repulsion for better spread
+        })
+      )
+      .force('collide', d3.forceCollide()
+        .radius(d => calculateProportionalRadius(d) + 15)
+        .strength(0.9)
+      )
+      .force('x', d3.forceX(innerHeight / 2).strength(0.05)) // Gentle centering on vertical axis
+      .force('y', d3.forceY(innerWidth / 2).strength(0.05))  // Gentle centering on horizontal axis
+      .alpha(1.0)
+      .alphaDecay(0.01)
+      .velocityDecay(0.4)
+      .stop();
+
+    // Run simulation synchronously for initial layout
+    for (let i = 0; i < 200; ++i) simulation.tick();
+
+    // Now nodes have x,y from physics simulation
+
+    // Calculate bounds for scaling and centering
     let minX = Infinity, maxX = -Infinity;
     let minY = Infinity, maxY = -Infinity;
-    nodes.forEach(d => {
-      if (!d.data._isCluster) { // Exclude cluster for initial bounds
-        minX = Math.min(minX, d.x);
-        maxX = Math.max(maxX, d.x);
-        minY = Math.min(minY, d.y);
-        maxY = Math.max(maxY, d.y);
-      }
-    });
-
-    // Position cluster node CLOSER to bottom category and near root
-    nodes.forEach(d => {
-      if (d.data._isCluster && d.depth === 1) {
-        // Move closer to bottom category (x is vertical in horizontal layout)
-        d.x = maxX + 18; // Closer to bottom node for shorter link
-        // Position VERY close to root horizontally (Y is horizontal in horizontal tree)
-        d.y = minY + 70; // Slightly closer to root
-      }
-    });
-
-    // Recalculate bounds including cluster
-    minX = Infinity;
-    maxX = -Infinity;
-    minY = Infinity;
-    maxY = -Infinity;
     nodes.forEach(d => {
       minX = Math.min(minX, d.x);
       maxX = Math.max(maxX, d.x);
@@ -343,27 +377,7 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
       ? (maxX - minX) / (depth1Nodes.length - 1)
       : innerHeight;
 
-    // Calculate proportional sizes first, then check for overlap
-    // Smart scaling: sqrt keeps growth manageable as content increases
-    const calculateProportionalRadius = (d) => {
-      if (d.data._isCluster) {
-        const count = d._clusteredLeaves ? d._clusteredLeaves.length : 0;
-        return 15 + Math.sqrt(count) * 2.5; // Modest scaling for cluster
-      }
-      if (d.depth === 0) {
-        const count = d._descendantCount || 1;
-        return 40 + Math.sqrt(count) * 3; // Root: better scaling
-      }
-      if (d.depth === 1) {
-        const count = d._descendantCount || 1;
-        return 15 + Math.sqrt(count) * 4; // Main categories: bigger now, scales well
-      }
-      if (d._children) {
-        const count = d._descendantCount || 1;
-        return 8 + Math.sqrt(count) * 2.5;
-      }
-      return 4;
-    };
+    // Note: calculateProportionalRadius is defined earlier in the update function
 
     // Find max proportional radius for depth-1 nodes
     const maxProportionalRadius = Math.max(
@@ -994,11 +1008,7 @@ export function renderDendrogram(data, showTooltip, hideTooltip) {
       // Update SVG dimensions
       svg.attr('width', width).attr('height', height);
 
-      const newInnerWidth = width - margin.left - margin.right;
-      const newInnerHeight = height - margin.top - margin.bottom;
-      tree.size([newInnerHeight, newInnerWidth]);
-
-      // Re-render with updated dimensions and scaling
+      // Re-render with updated dimensions and scaling (physics will recalculate)
       update(root);
     }, 150);
   });

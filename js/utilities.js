@@ -3,6 +3,55 @@
  * Utility functions for data processing, tooltips, and exports
  */
 
+// Debug mode flag - set to false for production
+const DEBUG = false;
+const log = DEBUG ? console.log.bind(console) : () => {};
+
+// Security: Sanitization functions for XSS prevention
+/**
+ * Sanitize user-provided text to prevent XSS attacks
+ * Strips all HTML tags and keeps only text content
+ * @param {string} text - User-provided text to sanitize
+ * @returns {string} - Safe text without HTML
+ */
+function sanitizeText(text) {
+  if (!text || typeof text !== 'string') return '';
+  return DOMPurify.sanitize(text, {
+    ALLOWED_TAGS: [], // Strip all HTML tags
+    KEEP_CONTENT: true // Keep text content
+  });
+}
+
+/**
+ * Sanitize and validate URLs to prevent javascript: and data: protocol attacks
+ * Only allows http:, https:, and mailto: protocols
+ * @param {string} url - URL to sanitize
+ * @returns {string} - Safe URL or '#' if invalid
+ */
+function sanitizeUrl(url) {
+  if (!url || typeof url !== 'string') return '#';
+
+  const allowedProtocols = ['http:', 'https:', 'mailto:'];
+  try {
+    const parsed = new URL(url);
+    if (allowedProtocols.includes(parsed.protocol)) {
+      // Still sanitize the URL string to prevent edge cases
+      return DOMPurify.sanitize(url, {
+        ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):)/i
+      });
+    }
+  } catch (e) {
+    // Invalid URL format
+    return '#';
+  }
+
+  // Reject javascript:, data:, and other dangerous protocols
+  return '#';
+}
+
+// Export sanitization functions for use in other modules
+export { sanitizeText, sanitizeUrl };
+
 // Tooltip functions
 const CONTENT_THRESHOLD = 2; // Show in side panel if more than 2 items
 const TOOLTIP_HIDE_DELAY = 800; // Delay before hiding tooltip (ms)
@@ -22,13 +71,13 @@ export function showTooltip(tooltip, event, d) {
   // Check for content items in urls/content/items arrays
   const items = d.data?.urls || d.data?.content || d.data?.items || [];
 
-  console.log(`Tooltip for "${name}": ${items ? items.length : 0} items`);
+  log(`Tooltip for "${name}": ${items ? items.length : 0} items`);
 
   if (items && Array.isArray(items) && items.length > 0) {
     // Check threshold: >2 items → show prompt, ≤2 items → show content
     if (items.length > CONTENT_THRESHOLD) {
       // More than threshold: Show prompt to click TOOLTIP (not circle)
-      console.log(`  → Showing "click to view" prompt (${items.length} > ${CONTENT_THRESHOLD})`);
+      log(`  → Showing "click to view" prompt (${items.length} > ${CONTENT_THRESHOLD})`);
       let detailsHtml = `<div style="text-align: center; padding: 10px;">`;
       detailsHtml += `<div style="margin-bottom: 5px;"><strong>${items.length} items available</strong></div>`;
       detailsHtml += `<div style="font-size: 0.9em; color: #aaa;">Click this box to view details</div>`;
@@ -48,7 +97,7 @@ export function showTooltip(tooltip, event, d) {
       }
       // Don't update position if already visible - let user click it
     } else {
-      console.log(`  → Showing inline content (${items.length} ≤ ${CONTENT_THRESHOLD})`);
+      log(`  → Showing inline content (${items.length} ≤ ${CONTENT_THRESHOLD})`);
       // Threshold or less: Show content inline, make it clickable so user can interact
       tooltip.classed('clickable', true);
       tooltip.datum(d); // Store node data in tooltip
@@ -57,16 +106,17 @@ export function showTooltip(tooltip, event, d) {
       detailsHtml += `<div style="font-size: 0.85em; color: #aaa; margin-bottom: 8px;">Click to view in side panel</div>`;
 
       items.forEach(item => {
-        const itemTitle = item.title || item.name || 'Untitled';
-        const itemType = item.type_ || item.type || '';
-        const itemAuthor = item.author || item.creator || '';
-        const itemUrl = item.url || '';
-        const itemDate = item.date || '';
+        // SECURITY: Sanitize all user-provided data to prevent XSS
+        const itemTitle = sanitizeText(item.title || item.name || 'Untitled');
+        const itemType = sanitizeText(item.type_ || item.type || '');
+        const itemAuthor = sanitizeText(item.author || item.creator || '');
+        const itemUrl = sanitizeUrl(item.url || '');
+        const itemDate = sanitizeText(item.date || '');
 
         detailsHtml += `<div style="margin: 8px 0; padding: 6px; border-left: 2px solid #40916c; background: rgba(64, 145, 108, 0.05);">`;
 
-        if (itemUrl) {
-          detailsHtml += `<div style="font-weight: 500;"><a href="${itemUrl}" target="_blank" onclick="event.stopPropagation()" style="color: #40916c; text-decoration: none;">${itemTitle}</a></div>`;
+        if (itemUrl && itemUrl !== '#') {
+          detailsHtml += `<div style="font-weight: 500;"><a href="${itemUrl}" target="_blank" rel="noopener noreferrer" class="tooltip-link" style="color: #40916c; text-decoration: none;">${itemTitle}</a></div>`;
         } else {
           detailsHtml += `<div style="font-weight: 500;">${itemTitle}</div>`;
         }
@@ -137,7 +187,8 @@ export function hideTooltip(tooltip) {
 
 // Side panel functions
 export function showSidePanel(sidePanel, d) {
-  const name = d.data?.name || d.data?.entity_name || 'Unknown';
+  // SECURITY: Sanitize node name
+  const name = sanitizeText(d.data?.name || d.data?.entity_name || 'Unknown');
   const items = d.data?.urls || d.data?.content || d.data?.items || [];
 
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -160,14 +211,14 @@ export function showSidePanel(sidePanel, d) {
     <div class="side-panel-header">
       <h3>${name}</h3>
       <div class="side-panel-actions">
-        <button class="favorite-btn" id="sidePanelFavoriteBtn" onclick="window.togglePanelFavorite()" title="${starTitle}">
+        <button class="favorite-btn" id="sidePanelFavoriteBtn" title="${starTitle}">
           <span id="favoriteIcon">${starIcon}</span>
         </button>
-        <button class="download-btn" onclick="window.downloadPanelItems(window._currentPanelItems, window._currentPanelName)" title="Download as TSV">
+        <button class="download-btn" id="sidePanelDownloadBtn" title="Download as TSV">
           <span>📥</span>
           <span>Download TSV</span>
         </button>
-        <button class="close-btn" onclick="window.closeSidePanel()">×</button>
+        <button class="close-btn" id="sidePanelCloseBtn">×</button>
       </div>
     </div>
     <div class="side-panel-body">
@@ -175,20 +226,21 @@ export function showSidePanel(sidePanel, d) {
   `;
 
   items.forEach((item, index) => {
-    const itemTitle = item.title || item.name || 'Untitled';
-    const itemType = item.type_ || item.type || '';
-    const itemAuthor = item.author || item.creator || '';
-    const itemUrl = item.url || '';
-    const itemDate = item.date || '';
-    const itemDescription = item.description || item.abstract || '';
+    // SECURITY: Sanitize all user-provided data to prevent XSS
+    const itemTitle = sanitizeText(item.title || item.name || 'Untitled');
+    const itemType = sanitizeText(item.type_ || item.type || '');
+    const itemAuthor = sanitizeText(item.author || item.creator || '');
+    const itemUrl = sanitizeUrl(item.url || '');
+    const itemDate = sanitizeText(item.date || '');
+    const itemDescription = sanitizeText(item.description || item.abstract || '');
     const itemTags = item.tags || '';
 
     contentHtml += `<div class="side-panel-item">`;
     contentHtml += `<div class="item-number">${index + 1}</div>`;
     contentHtml += `<div class="item-content">`;
 
-    if (itemUrl) {
-      contentHtml += `<div class="item-title"><a href="${itemUrl}" target="_blank" onclick="event.stopPropagation()">${itemTitle}</a></div>`;
+    if (itemUrl && itemUrl !== '#') {
+      contentHtml += `<div class="item-title"><a href="${itemUrl}" target="_blank" rel="noopener noreferrer" class="side-panel-link">${itemTitle}</a></div>`;
     } else {
       contentHtml += `<div class="item-title">${itemTitle}</div>`;
     }
@@ -209,7 +261,8 @@ export function showSidePanel(sidePanel, d) {
       const tagsArray = Array.isArray(itemTags) ? itemTags : itemTags.split(',').map(t => t.trim());
       contentHtml += `<div class="item-tags">`;
       tagsArray.forEach(tag => {
-        contentHtml += `<span class="tag">${tag}</span>`;
+        // SECURITY: Sanitize each tag
+        contentHtml += `<span class="tag">${sanitizeText(tag)}</span>`;
       });
       contentHtml += `</div>`;
     }
@@ -221,6 +274,43 @@ export function showSidePanel(sidePanel, d) {
 
   sidePanel.innerHTML = contentHtml;
   sidePanel.classList.add('open');
+
+  // Attach event listeners for side panel buttons (CSP-compliant, no inline handlers)
+  const favoriteBtn = document.getElementById('sidePanelFavoriteBtn');
+  const downloadBtn = document.getElementById('sidePanelDownloadBtn');
+  const closeBtn = document.getElementById('sidePanelCloseBtn');
+
+  if (favoriteBtn) {
+    favoriteBtn.addEventListener('click', () => {
+      if (window.togglePanelFavorite) {
+        window.togglePanelFavorite();
+      }
+    });
+  }
+
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      if (window.downloadPanelItems) {
+        window.downloadPanelItems(window._currentPanelItems, window._currentPanelName);
+      }
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (window.closeSidePanel) {
+        window.closeSidePanel();
+      }
+    });
+  }
+
+  // Add event delegation for all links to stop propagation (CSP-compliant)
+  const allLinks = sidePanel.querySelectorAll('.side-panel-link, .tooltip-link');
+  allLinks.forEach(link => {
+    link.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+  });
 }
 
 export function hideSidePanel(sidePanel) {

@@ -173,6 +173,10 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       clusterNode.depth = parentNode.depth + 1;
       clusterNode.height = 0;
 
+      // FIX: Calculate value as sum of terminal nodes (each terminal has value=1 from .sum())
+      // D3's partition() layout requires this value to calculate arc coordinates (x0, x1, y0, y1)
+      clusterNode.value = terminals.reduce((sum, terminal) => sum + (terminal.value || 1), 0);
+
       // Replace children with categories + cluster
       parentNode.children = [...categories, clusterNode];
     }
@@ -224,13 +228,27 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       // Highlight matches in red
       if (isMatch) return '#ff4444';
 
+      // Cluster nodes: use desaturated version of category color
+      if (d.data._isCluster) {
+        const categoryColor = getNodeColor(d);
+        // Convert to desaturated gray-tinted version
+        const color = d3.color(categoryColor);
+        if (color) {
+          const hsl = d3.hsl(color);
+          hsl.s = hsl.s * 0.2; // Reduce saturation to 20% (heavily desaturated)
+          hsl.l = Math.min(0.7, hsl.l + 0.15); // Lighten slightly
+          return hsl.toString();
+        }
+        return '#999999'; // Fallback to neutral gray
+      }
+
       // Use category-based colors for all nodes
       return getNodeColor(d);
     })
     .attr('fill-opacity', d => {
       if (d.data._isCluster) {
-        // Very transparent for cluster - should look like ghost
-        return 0.35;
+        // Slightly higher opacity for desaturated color (cleaner look)
+        return 0.5;
       }
       if (!d.children || d.children.length === 0) {
         return 0.6; // Terminal nodes
@@ -243,8 +261,8 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
                       d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
 
-      // Cluster nodes get distinctive dashed border
-      if (d.data._isCluster) return 'rgba(255, 255, 255, 0.5)';
+      // Cluster nodes get subtle border (no dashes)
+      if (d.data._isCluster) return 'rgba(255, 255, 255, 0.3)';
       return isMatch ? '#cc0000' : 'rgba(255, 255, 255, 0.2)';
     })
     .attr('stroke-width', d => {
@@ -252,11 +270,9 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
                       d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
 
-      // Cluster nodes get thicker border
-      if (d.data._isCluster) return 2;
+      // Standard border width for all nodes (removed thicker border for clusters)
       return isMatch ? 2 : 1;
     })
-    .attr('stroke-dasharray', d => d.data._isCluster ? '5,3' : null)
     .style('cursor', d => {
       const items = d.data?.urls || d.data?.content || d.data?.items || [];
       return (d.data._isCluster || d.children || items.length > 0) ? 'pointer' : 'default';
@@ -1087,29 +1103,7 @@ export function renderSunburst(data, showTooltip, hideTooltip) {
       svg.select('circle')
         .attr('r', radius * 0.15);
 
-      // Update zoom controls position (responsive)
-      const isMobileResize = width < 768;
-      if (isMobileResize) {
-        zoomControls
-          .style('left', '50%')
-          .style('bottom', '5px')
-          .style('top', null)
-          .style('transform', 'translateX(-50%)')
-          .style('flex-direction', 'row')
-          .style('background', 'rgba(0, 0, 0, 0.3)')
-          .style('padding', '6px')
-          .style('border-radius', '8px');
-      } else {
-        zoomControls
-          .style('left', '20px')
-          .style('top', '50%')
-          .style('bottom', null)
-          .style('transform', 'translateY(-50%)')
-          .style('flex-direction', 'column')
-          .style('background', null)
-          .style('padding', null)
-          .style('border-radius', null);
-      }
+      // Note: Zoom controls UI removed - using global navigation buttons instead
 
       // Re-apply current zoom state
       zoomToNode(focus);

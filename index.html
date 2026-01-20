@@ -3,13 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Content Security Policy for XSS Protection -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'sha256-7rWeD10ik1BMjoz2Dh2m2kgEg7hQt6N2SCDjrPJzywY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net; base-uri 'self'; form-action 'self';">
   <title>Climate Solutions Explorer</title>
+  <link rel="icon" type="image/png" href="cd_logo_crop_green.png">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
-  <script src="https://unpkg.com/compromise-dates@latest/builds/compromise-dates.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- CDN Scripts with Subresource Integrity (SRI) for security -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"
+          integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/compromise@14.14.0/builds/compromise.min.js"
+          integrity="sha384-2jczECIHxPzECP6gPRFz92LAHwBStdqWYumiYpIgWrHlyzHzeziKPzZn18aj/ukV"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/compromise-dates@3.4.0/builds/compromise-dates.min.js"
+          integrity="sha384-hjGbVtqNF2/03jpV8xvagzHQ74Pqr60HNzd9Y39YGUjyov2gy+/cCXolOW68na7F"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"
+          integrity="sha384-IniM+QBDckT3t/xRvZUiUyns2i4VQ1OFdqa5l/YN7RBCzb/BtLOoN6PDsAuACzRP"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+          integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
+          crossorigin="anonymous"></script>
+  <!-- DOMPurify - XSS Prevention -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+          integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+          crossorigin="anonymous"></script>
 
 </head>
 <body>
@@ -157,10 +175,14 @@
             <button class="dropdown-option" data-viz="treemap" data-icon="📦" data-name="Treemap">
               <span class="option-icon">📦</span>
               <span>Treemap</span>
+            </button>
             <button class="dropdown-option" data-viz="sunburst" data-icon="☀️" data-name="Sunburst">
               <span class="option-icon">☀️</span>
               <span>Sunburst</span>
             </button>
+            <button class="dropdown-option" data-viz="network" data-icon="🕸️" data-name="Force Network">
+              <span class="option-icon">🕸️</span>
+              <span>Force Network</span>
             </button>
           </div>
         </div>
@@ -464,6 +486,6 @@
   </script>
 
   <!-- Main Application Script -->
-  <script type="module" src="js/main.js?v=20251228-nobuttons"></script>
+  <script type="module" src="js/main.js?v=20251230-force-fix"></script>
 </body>
 </html>

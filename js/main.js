@@ -46,6 +46,11 @@ import { renderCirclePacking } from './visualizations/circlePacking.js';
 import { renderDendrogram } from './visualizations/dendrogram.js';
 import { renderTreemap } from './visualizations/treemap.js';
 import { renderSunburst } from './visualizations/sunburst.js';
+import { renderForceNetwork } from './visualizations/forceNetwork.js';
+
+// Debug mode flag - set to false for production
+const DEBUG = false;
+const log = DEBUG ? console.log.bind(console) : () => {};
 
 // Global state
 let globalData = null;
@@ -445,7 +450,7 @@ function applyURLState(state) {
     // Render visualization with applied state
     renderVisualization();
 
-    console.log('Applied URL state:', state);
+    log('Applied URL state:', state);
   } finally {
     isApplyingURLState = false;
   }
@@ -461,7 +466,7 @@ tooltip.on('click', function() {
   if (d && d.data) {
     const items = d.data?.urls || d.data?.content || d.data?.items || [];
     if (items && items.length > 0) {
-      console.log('Tooltip clicked, opening side panel');
+      log('Tooltip clicked, opening side panel');
       showSidePanel(sidePanel, d);
       hideTooltip(tooltip);
     }
@@ -549,13 +554,24 @@ function renderFavoritesList() {
         <div class="favorite-item-name">${fav.name}</div>
         <div class="favorite-item-path">${fav.path}</div>
         <div class="favorite-item-actions">
-          <button class="favorite-item-remove" onclick="window.removeFavoriteItem('${fav.id}')" title="Remove from favorites">Remove</button>
+          <button class="favorite-item-remove" data-fav-id="${fav.id}" title="Remove from favorites">Remove</button>
         </div>
       </div>
     `;
   });
 
   container.innerHTML = html;
+
+  // Attach event listeners for remove buttons (CSP-compliant, no inline handlers)
+  const removeButtons = container.querySelectorAll('.favorite-item-remove');
+  removeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const favId = button.getAttribute('data-fav-id');
+      if (window.removeFavoriteItem) {
+        window.removeFavoriteItem(favId);
+      }
+    });
+  });
 }
 
 // Global function to remove favorite item
@@ -705,7 +721,7 @@ async function loadData() {
 
     // THEN preprocess data to convert urls arrays into D3-compatible hierarchy
     globalData = preprocessDataForD3(rawData);
-    console.log('Preprocessed data structure:', globalData);
+    log('Preprocessed data structure:', globalData);
 
     const count = countNodes(globalData);
     document.getElementById('searchInfo').textContent = `${count.toLocaleString()} solutions`;
@@ -782,6 +798,9 @@ function renderVisualization() {
           break;
         case 'sunburst':
           renderSunburst(filteredData, wrappedShowTooltip, wrappedHideTooltip);
+          break;
+        case 'network':
+          renderForceNetwork(filteredData, wrappedShowTooltip, wrappedHideTooltip);
           break;
       }
 
@@ -1155,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup browser navigation (back/forward buttons)
   window.addEventListener('popstate', () => {
-    console.log('Popstate event - restoring state from URL');
+    log('Popstate event - restoring state from URL');
     const urlState = parseURL();
     if (urlState) {
       applyURLState(urlState);
@@ -1169,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // This will be called after loadData completes
   const initialURLState = parseURL();
   if (initialURLState) {
-    console.log('Initial URL state detected:', initialURLState);
+    log('Initial URL state detected:', initialURLState);
     // Wait for data to load before applying URL state
     const checkDataLoaded = setInterval(() => {
       if (globalData && searchIndex) {

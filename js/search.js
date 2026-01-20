@@ -5,6 +5,10 @@
 
 import { countNodes } from './utilities.js';
 
+// Debug mode flag - set to false for production
+const DEBUG = false;
+const log = DEBUG ? console.log.bind(console) : () => {};
+
 let searchIndex = null;
 
 // Initialize search index with MiniSearch
@@ -75,7 +79,7 @@ export function initializeSearch(data) {
   });
 
   searchIndex.addAll(documents);
-  console.log(`Search index built with ${documents.length} items`);
+  log(`Search index built with ${documents.length} items`);
 
   return searchIndex;
 }
@@ -95,7 +99,7 @@ export function getFilteredData(globalData, searchQuery, currentType, currentTag
   if (searchQuery) {
     // Parse advanced search operators
     const parsedQuery = parseAdvancedSearchQuery(searchQuery);
-    console.log('Parsed query:', parsedQuery);
+    log('Parsed query:', parsedQuery);
 
     let results;
 
@@ -110,9 +114,9 @@ export function getFilteredData(globalData, searchQuery, currentType, currentTag
     // Extract matched names instead of node references (since preprocessing creates new nodes)
     // Filter out empty names
     matchedNames = new Set(results.map(r => r.name).filter(name => name && name.trim()));
-    console.log('Search results:', results.length, 'unique names:', matchedNames.size);
-    console.log('First 5 matched names:', Array.from(matchedNames).slice(0, 5));
-    console.log('Sample result:', results[0]);
+    log('Search results:', results.length, 'unique names:', matchedNames.size);
+    log('First 5 matched names:', Array.from(matchedNames).slice(0, 5));
+    log('Sample result:', results[0]);
     data = filterBySearchNames(data, matchedNames);
   }
 
@@ -318,7 +322,7 @@ function executeAdvancedSearch(parsedQuery, searchIndexInstance, globalData) {
     });
   }
 
-  console.log(`Advanced search returned ${results.length} results`);
+  log(`Advanced search returned ${results.length} results`);
   return results;
 }
 
@@ -468,7 +472,7 @@ function containsBooleanOperators(query) {
 
 // Execute boolean search
 function executeBooleanSearch(queryText, searchIndexInstance) {
-  console.log(`Executing boolean search for: "${queryText}"`);
+  log(`Executing boolean search for: "${queryText}"`);
 
   // Handle OR operator first (lowest precedence)
   if (/\bOR\b/i.test(queryText)) {
@@ -492,7 +496,7 @@ function executeBooleanSearch(queryText, searchIndexInstance) {
 // Handle OR searches - union of results
 function handleOrSearch(queryText, searchIndexInstance) {
   const orParts = queryText.split(/\s+OR\s+/i).map(part => part.trim());
-  console.log('OR parts:', orParts);
+  log('OR parts:', orParts);
 
   const allResults = new Map();
 
@@ -516,14 +520,14 @@ function handleOrSearch(queryText, searchIndexInstance) {
   });
 
   const results = Array.from(allResults.values()).sort((a, b) => b.score - a.score);
-  console.log(`OR search combined ${orParts.length} parts into ${results.length} results`);
+  log(`OR search combined ${orParts.length} parts into ${results.length} results`);
   return results;
 }
 
 // Handle AND searches - intersection of results
 function handleAndSearch(queryText, searchIndexInstance) {
   const andParts = queryText.split(/\s+AND\s+/i).map(part => part.trim());
-  console.log('AND parts:', andParts);
+  log('AND parts:', andParts);
 
   if (andParts.length === 0) return [];
 
@@ -544,7 +548,7 @@ function handleAndSearch(queryText, searchIndexInstance) {
     if (results.length === 0) break; // No point continuing if no intersection
   }
 
-  console.log(`AND search intersected ${andParts.length} parts into ${results.length} results`);
+  log(`AND search intersected ${andParts.length} parts into ${results.length} results`);
   return results.sort((a, b) => b.score - a.score);
 }
 
@@ -555,7 +559,7 @@ function searchSingleTerm(term, searchIndexInstance) {
   const cleanTerm = cleanSearchTerm(term);
   if (!cleanTerm) return [];
 
-  console.log(`Searching single term: "${cleanTerm}"`);
+  log(`Searching single term: "${cleanTerm}"`);
 
   try {
     // Handle quoted phrases
@@ -608,7 +612,7 @@ function handleNotSearch(queryText, searchIndexInstance) {
         const excludeIds = new Set(excludeResults.map(r => r.id));
 
         const results = allResults.filter(result => !excludeIds.has(result.id));
-        console.log(`NOT search excluded ${excludeResults.length} results, returning ${results.length}`);
+        log(`NOT search excluded ${excludeResults.length} results, returning ${results.length}`);
         return results;
       }
     }
@@ -616,7 +620,7 @@ function handleNotSearch(queryText, searchIndexInstance) {
   }
 
   const [, includePart, excludePart] = notMatch;
-  console.log(`NOT search: include "${includePart}", exclude "${excludePart}"`);
+  log(`NOT search: include "${includePart}", exclude "${excludePart}"`);
 
   let includeResults = [];
   if (includePart.trim()) {
@@ -635,7 +639,7 @@ function handleNotSearch(queryText, searchIndexInstance) {
   const excludeIds = new Set(excludeResults.map(r => r.id));
   const results = includeResults.filter(result => !excludeIds.has(result.id));
 
-  console.log(`NOT search: ${includeResults.length} include - ${excludeResults.length} exclude = ${results.length} results`);
+  log(`NOT search: ${includeResults.length} include - ${excludeResults.length} exclude = ${results.length} results`);
   return results;
 }
 
@@ -677,7 +681,7 @@ function filterBySearchNames(node, matchedNames, depth = 0) {
   const nodeMatches = matchedNames.has(node.name);
 
   if (nodeMatches && depth < 3) {
-    console.log(`  ${'  '.repeat(depth)}✓ Match: "${node.name}"`);
+    log(`  ${'  '.repeat(depth)}✓ Match: "${node.name}"`);
   }
 
   // Check children recursively
