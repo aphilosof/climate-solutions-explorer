@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Privacy Policy for the Climate Solutions Explorer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
+  <title>Privacy Policy - Climate Solutions Explorer</title>
+  <link rel="stylesheet" href="../styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"
+          integrity="sha384-odPBjvtXVM/5hOYIr3A1dB+flh0c3wAT3bSesIOqEGmyUA4JoKf/YTWy0XKOYAY7"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+          integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+          crossorigin="anonymous"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #0a1f1a 0%, #0d2e27 25%, #0a1f1a 50%, #1a3a2e 75%, #0a1f1a 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .privacy-container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 30px 50px;
+      background: rgba(10, 31, 26, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(64, 145, 108, 0.2);
+      border-radius: 12px;
+    }
+
+    .privacy-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo-link {
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .site-logo {
+      height: 60px;
+      vertical-align: middle;
+    }
+
+    .back-button {
+      display: inline-block;
+      color: #52b788;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 20px;
+      padding: 5px 10px;
+      border: 1px solid rgba(82, 183, 136, 0.3);
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+
+    .back-button:hover {
+      background: rgba(82, 183, 136, 0.1);
+    }
+
+    #privacy-content {
+      color: #d8f3dc;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+
+    #privacy-content h1 { color: #95d5b2; font-size: 2em; margin: 30px 0 15px; }
+    #privacy-content h2 { color: #95d5b2; font-size: 1.5em; margin: 25px 0 12px; border-bottom: 1px solid rgba(82, 183, 136, 0.2); padding-bottom: 8px; }
+    #privacy-content h3 { color: #74c69d; font-size: 1.2em; margin: 20px 0 10px; }
+    #privacy-content a { color: #52b788; }
+    #privacy-content a:hover { color: #95d5b2; }
+    #privacy-content code { background: rgba(82, 183, 136, 0.15); padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    #privacy-content ul, #privacy-content ol { margin: 10px 0; padding-left: 25px; }
+    #privacy-content li { margin: 5px 0; }
+    #privacy-content strong { color: #95d5b2; }
+    #privacy-content hr { border: none; border-top: 1px solid rgba(82, 183, 136, 0.2); margin: 35px 0; }
+
+    .loading {
+      text-align: center;
+      color: #95d5b2;
+      padding: 40px;
+      font-size: 1.2em;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="privacy-container">
+    <div class="privacy-header">
+      <a href="../index.html" class="logo-link">
+        <img src="../cd_logo_crop_green.png" alt="Climate Drift Logo" class="site-logo">
+      </a>
+    </div>
+
+    <a href="../index.html" class="back-button">&larr; Back to Explorer</a>
+
+    <div id="privacy-content" class="loading">
+      Loading Privacy Policy...
+    </div>
+
+    <a href="../index.html" class="back-button">&larr; Back to Explorer</a>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-left">
+      <span>&copy; 2026 Climate Drift and Alon Philosof</span>
+      <a href="mailto:info@climatesolutionsmap.earth">&#x1F4E7; Contact</a>
+      <a href="https://github.com/aphilosof/climate-solutions-explorer" target="_blank" rel="noopener noreferrer">
+        &#x2B50; GitHub
+      </a>
+      <a href="https://forms.gle/uNyqmvkd6XGxRq38A" target="_blank" rel="noopener noreferrer">&#x1F4A1; Suggest an entry</a>
+      <a href="FAQ.html">FAQ</a>
+    </div>
+  </footer>
+
+  <script defer src="markdown-loader.js"></script>
+</body>
+</html>

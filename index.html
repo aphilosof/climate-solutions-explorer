@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Content Security Policy for XSS Protection -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net; base-uri 'self'; form-action 'self';">
+  <title>Climate Solutions Explorer</title>
+  <meta name="description" content="Explore 300+ climate solutions across 12 sectors through interactive visualizations. Search, filter, and navigate climate action data from Power to Carbon Removal.">
+  <meta property="og:title" content="Climate Solutions Explorer">
+  <meta property="og:description" content="Interactive platform for exploring 300+ climate solutions across Power, Transportation, Carbon Removal, Finance, and more.">
+  <meta property="og:image" content="https://climatesolutionsmap.earth/og-image.png">
+  <meta property="og:image:width" content="1184">
+  <meta property="og:image:height" content="1263">
+  <meta property="og:url" content="https://climatesolutionsmap.earth">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Climate Solutions Explorer">
+  <meta name="twitter:description" content="Interactive platform for exploring 300+ climate solutions across Power, Transportation, Carbon Removal, Finance, and more.">
+  <meta name="twitter:image" content="https://climatesolutionsmap.earth/og-image.png">
+  <link rel="icon" type="image/png" href="cd_logo_crop_green.png">
+  <link rel="canonical" href="https://climatesolutionsmap.earth/">
+  <link rel="stylesheet" href="styles.css?v=20260601">
+  <!-- CDN Scripts with Subresource Integrity (SRI) for security -->
+  <script defer src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"
+          integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
+          crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/compromise@14.14.0/builds/compromise.min.js"
+          integrity="sha384-2jczECIHxPzECP6gPRFz92LAHwBStdqWYumiYpIgWrHlyzHzeziKPzZn18aj/ukV"
+          crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/compromise-dates@3.4.0/builds/compromise-dates.min.js"
+          integrity="sha384-hjGbVtqNF2/03jpV8xvagzHQ74Pqr60HNzd9Y39YGUjyov2gy+/cCXolOW68na7F"
+          crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"
+          integrity="sha384-IniM+QBDckT3t/xRvZUiUyns2i4VQ1OFdqa5l/YN7RBCzb/BtLOoN6PDsAuACzRP"
+          crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+          integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
+          crossorigin="anonymous"></script>
+  <!-- DOMPurify - XSS Prevention -->
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+          integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+          crossorigin="anonymous"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Climate Solutions Explorer",
+    "url": "https://climatesolutionsmap.earth",
+    "description": "Interactive platform for exploring 300+ climate solutions across Power, Transportation, Carbon Removal, Finance, and more.",
+    "applicationCategory": "EnvironmentalApplication",
+    "operatingSystem": "Web",
+    "author": {
+      "@type": "Organization",
+      "name": "Climate Drift",
+      "url": "https://climatedrift.substack.com"
+    },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://climatesolutionsmap.earth/#search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <h1 class="site-title">
+      <a href="https://climatedrift.substack.com/" class="logo-link">
+        <img src="cd_logo_crop_green.png" alt="Climate Drift logo" class="site-logo">
+      </a>
+       Climate Solutions Explorer
+  </h1>
+    <p class="site-description" id="siteDescription">
+      Explore and discover climate solutions. Use the search bar to find specific solutions,
+      filter by type or tag, and switch between different visualizations.
+      <a href="docs/FAQ.html" style="color: #40916c; text-decoration: none; border-bottom: 1px solid rgba(64, 145, 108, 0.5);">Learn more in the FAQ</a>.
+    </p>
+  </header>
+
+  <!-- Floating Menu Toggle Button -->
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+    <span class="hamburger-icon">☰</span>
+  </button>
+
+  <!-- Floating Home Button (for all visualizations) -->
+  <button class="home-toggle" id="homeToggle" aria-label="Reset to home view" style="display: none;">
+    <span class="home-icon">⌂</span>
+  </button>
+
+  <!-- Floating Up Button (go to parent level) -->
+  <button class="up-toggle" id="upToggle" aria-label="Go up one level" style="display: none;">
+    <span class="up-icon">↑</span>
+  </button>
+
+  <!-- Floating Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3>Controls</h3>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
+    </div>
+
+    <div class="sidebar-content">
+      <!-- Search -->
+      <div class="sidebar-section">
+        <label class="sidebar-label" for="searchInput">Search</label>
+        <div class="search-box">
+          <input
+            type="text"
+            class="search-input"
+            id="searchInput"
+            placeholder="Search climate solutions..."
+          >
+          <div class="search-suggestions" id="searchSuggestions"></div>
+          <div class="search-count" id="searchInfo" role="status" aria-live="polite">Loading...</div>
+        </div>
+
+        <!-- Advanced Search Toggle -->
+        <button class="advanced-search-toggle" id="advancedSearchToggle">
+          <span class="toggle-icon">⚙️</span>
+          <span class="toggle-text">Advanced Search</span>
+          <span class="toggle-arrow">▼</span>
+        </button>
+
+        <!-- Advanced Search Panel -->
+        <div class="advanced-search-panel" id="advancedSearchPanel" style="display: none;">
+          <div class="advanced-search-header">
+            <h4>Search Operators</h4>
+          </div>
+          <div class="advanced-search-content">
+            <div class="search-help-item">
+              <code>"exact phrase"</code>
+              <span class="help-description">Search for exact phrase</span>
+            </div>
+            <div class="search-help-item">
+              <code>-exclude</code>
+              <span class="help-description">Exclude results containing term</span>
+            </div>
+            <div class="search-help-item">
+              <code>solar AND wind</code>
+              <span class="help-description">Results must contain both terms</span>
+            </div>
+            <div class="search-help-item">
+              <code>solar OR wind</code>
+              <span class="help-description">Results with either term</span>
+            </div>
+            <div class="search-help-item">
+              <code>author:ClimateDrift</code>
+              <span class="help-description">Search by author</span>
+            </div>
+            <div class="search-help-item">
+              <code>type:article</code>
+              <span class="help-description">Search by type</span>
+            </div>
+            <div class="search-help-item">
+              <code>tag:renewable</code>
+              <span class="help-description">Search by tag</span>
+            </div>
+            <div class="search-help-item">
+              <code>date:2023</code>
+              <span class="help-description">Search by year or range (2023-2024)</span>
+            </div>
+          </div>
+          <div class="advanced-search-examples">
+            <h4>Examples</h4>
+            <div class="search-example" data-query='"solar power" author:ClimateDrift'>
+              "solar power" author:ClimateDrift
+            </div>
+            <div class="search-example" data-query='renewable -fossil type:article'>
+              renewable -fossil type:article
+            </div>
+            <div class="search-example" data-query='wind OR solar date:2023'>
+              wind OR solar date:2023
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reset Filters Button -->
+      <div class="sidebar-section">
+        <button class="reset-filters-btn" id="resetFilters" title="Clear all filters and search">
+          <span>🔄</span>
+          <span>Reset Filters</span>
+        </button>
+      </div>
+
+      <!-- Viz Selector -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">Visualization</label>
+        <div class="selector">
+          <button class="selector-btn" id="vizSelector">
+            <span class="selector-value" id="vizValue">Sunburst</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="vizDropdown">
+            <button class="dropdown-option" data-viz="circle" data-icon="⭕" data-name="Circle Packing">
+              <span class="option-icon">⭕</span>
+              <span>Circle Packing</span>
+            </button>
+            <button class="dropdown-option" data-viz="dendrogram" data-icon="🌳" data-name="Dendrogram">
+              <span class="option-icon">🌳</span>
+              <span>Dendrogram</span>
+            </button>
+            <button class="dropdown-option" data-viz="treemap" data-icon="📦" data-name="Treemap">
+              <span class="option-icon">📦</span>
+              <span>Treemap</span>
+            </button>
+            <button class="dropdown-option active" data-viz="sunburst" data-icon="☀️" data-name="Sunburst">
+              <span class="option-icon">☀️</span>
+              <span>Sunburst</span>
+            </button>
+            <button class="dropdown-option" data-viz="network" data-icon="🕸️" data-name="Force Network">
+              <span class="option-icon">🕸️</span>
+              <span>Force Network</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">Filters</label>
+
+        <!-- Type Filter -->
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="typeSelector">
+            <span class="selector-label">Type:</span>
+            <span class="selector-value" id="typeValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="typeDropdown">
+            <button class="dropdown-option active" data-type="all">All Types</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Tag Filter -->
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="tagSelector">
+            <span class="selector-label">Tag:</span>
+            <span class="selector-value" id="tagValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="tagDropdown">
+            <button class="dropdown-option active" data-tag="all">All Tags</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Author Filter -->
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="authorSelector">
+            <span class="selector-label">Author:</span>
+            <span class="selector-value" id="authorValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="authorDropdown">
+            <button class="dropdown-option active" data-author="all">All Authors</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Location Filter -->
+        <div class="selector sidebar-selector">
+          <button class="selector-btn" id="locationSelector">
+            <span class="selector-label">Location:</span>
+            <span class="selector-value" id="locationValue">All</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+          <div class="dropdown" id="locationDropdown">
+            <button class="dropdown-option active" data-location="all">All Locations</button>
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="date-range-filter">
+          <label class="date-range-label">Date Range</label>
+          <div class="date-inputs">
+            <div class="date-input-group">
+              <label class="date-label">From:</label>
+              <input type="date" id="dateFrom" class="date-input">
+            </div>
+            <div class="date-input-group">
+              <label class="date-label">To:</label>
+              <input type="date" id="dateTo" class="date-input">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Favorites Section -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">My Favorites (<span id="favoritesCount">0</span>)</label>
+        <div id="favoritesContainer" class="favorites-container">
+          <div class="favorites-empty">No favorites yet. Click the ⭐ button when viewing a solution to add it to your favorites.</div>
+        </div>
+        <div class="favorites-actions">
+          <button class="favorites-action-btn" id="exportFavoritesBtn" title="Export favorites as JSON" style="display: none;">
+            <span>📤</span>
+            <span>Export Favorites</span>
+          </button>
+          <button class="favorites-action-btn" id="clearFavoritesBtn" title="Clear all favorites" style="display: none;">
+            <span>🗑️</span>
+            <span>Clear All</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Export Section -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">Export</label>
+        <div class="export-buttons-grid">
+          <button class="export-btn sidebar-export-btn" id="exportJSON">
+            <span>📄</span>
+            <span>JSON</span>
+          </button>
+          <button class="export-btn sidebar-export-btn" id="exportCSV">
+            <span>📊</span>
+            <span>CSV</span>
+          </button>
+          <button class="export-btn sidebar-export-btn" id="exportSVG">
+            <span>🖼️</span>
+            <span>SVG</span>
+          </button>
+          <button class="export-btn sidebar-export-btn" id="exportPNG">
+            <span>📷</span>
+            <span>PNG</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay (to close sidebar when clicking outside) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+      <div class="spinner-circle"></div>
+      <div class="spinner-icon">🌍</div>
+    </div>
+    <div class="loading-text" id="loadingText">Loading...</div>
+  </div>
+
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb-nav" id="breadcrumbNav" aria-label="Breadcrumb" style="display: none;">
+    <div class="breadcrumb-container">
+      <button class="breadcrumb-item breadcrumb-home" id="breadcrumbHome" title="Go to root">
+        <span class="breadcrumb-icon">🏠</span>
+        <span class="breadcrumb-text">Climate Solutions</span>
+      </button>
+      <div class="breadcrumb-trail" id="breadcrumbTrail">
+        <!-- Dynamically populated breadcrumb items -->
+      </div>
+    </div>
+  </nav>
+
+  <!-- Visualization -->
+  <div class="viz-area">
+    <div id="visualization">
+      <div class="loading">
+        <div class="loading-icon">🌍</div>
+        <div class="loading-text">Loading Data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-left">
+      <span>© 2026 Climate Drift and Alon Philosof</span>
+      <a href="mailto:info@climatesolutionsmap.earth">📧 Contact</a>
+      <a href="https://github.com/aphilosof/climate-solutions-explorer" target="_blank" rel="noopener noreferrer">
+        ⭐ GitHub
+      </a>
+      <a href="https://forms.gle/uNyqmvkd6XGxRq38A" target="_blank" rel="noopener noreferrer">💡 Suggest an entry</a>
+      <a href="docs/PRIVACY.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+    </div>
+  </footer>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip">
+    <div class="tooltip-name"></div>
+    <div class="tooltip-details"></div>
+  </div>
+
+  <!-- Side Panel for Detailed Content -->
+  <div class="side-panel" id="sidePanel">
+    <!-- Content will be dynamically inserted here -->
+  </div>
+
+  <!-- UI Enhancement Script -->
+  <script src="js/ui.js?v=20260601"></script>
+
+  <!-- Main Application Script -->
+  <script type="module" src="js/main.js?v=20260601"></script>
+</body>
+</html>

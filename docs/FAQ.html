@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Frequently asked questions about the Climate Solutions Explorer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
+  <title>FAQ - Climate Solutions Explorer</title>
+  <link rel="stylesheet" href="../styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"
+          integrity="sha384-odPBjvtXVM/5hOYIr3A1dB+flh0c3wAT3bSesIOqEGmyUA4JoKf/YTWy0XKOYAY7"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+          integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+          crossorigin="anonymous"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #0a1f1a 0%, #0d2e27 25%, #0a1f1a 50%, #1a3a2e 75%, #0a1f1a 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .faq-container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 30px 50px;
+      background: rgba(10, 31, 26, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(64, 145, 108, 0.2);
+      border-radius: 12px;
+    }
+
+    .faq-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo-link {
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .site-logo {
+      height: 60px;
+      vertical-align: middle;
+    }
+
+    .back-button {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 12px 24px;
+      background: #40916c;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .back-button:hover {
+      background: #52b788;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(64, 145, 108, 0.3);
+    }
+
+    #faq-content h1 {
+      color: #95d5b2;
+      font-size: 2.8em;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: 800;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #faq-content h2 {
+      color: #52b788;
+      font-size: 1.7em;
+      margin-top: 40px;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(82, 183, 136, 0.4);
+      font-weight: 700;
+      text-align: left;
+    }
+
+    #faq-content p {
+      color: #e8f5e9;
+      line-height: 1.8;
+      margin-bottom: 20px;
+      font-size: 1.1em;
+      text-align: left;
+      font-weight: 400;
+    }
+
+    #faq-content a {
+      color: #95d5b2;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(149, 213, 178, 0.5);
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    #faq-content a:hover {
+      color: #b7e4c7;
+      border-bottom: 1px solid #b7e4c7;
+    }
+
+    #faq-content ul {
+      color: #e8f5e9;
+      margin: 18px 0 28px 0;
+      padding-left: 35px;
+      list-style-type: disc;
+      text-align: left;
+    }
+
+    #faq-content li {
+      margin: 14px 0;
+      line-height: 1.8;
+      padding-left: 10px;
+      font-size: 1.05em;
+      font-weight: 400;
+    }
+
+    #faq-content li::marker {
+      color: #52b788;
+      font-size: 1.2em;
+    }
+
+    #faq-content strong {
+      color: #95d5b2;
+      font-weight: 800;
+    }
+
+    #faq-content code {
+      background: rgba(64, 145, 108, 0.25);
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      color: #b7e4c7;
+      font-size: 0.95em;
+      font-weight: 700;
+      border: 1px solid rgba(82, 183, 136, 0.3);
+    }
+
+    #faq-content hr {
+      border: none;
+      border-top: 1px solid rgba(82, 183, 136, 0.2);
+      margin: 35px 0;
+    }
+
+    .loading {
+      text-align: center;
+      color: #95d5b2;
+      padding: 40px;
+      font-size: 1.2em;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="faq-container">
+    <div class="faq-header">
+      <a href="../index.html" class="logo-link">
+        <img src="../cd_logo_crop_green.png" alt="Climate Drift Logo" class="site-logo">
+      </a>
+    </div>
+
+    <a href="../index.html" class="back-button">← Back to Explorer</a>
+
+    <div id="faq-content" class="loading">
+      Loading FAQ...
+    </div>
+
+    <a href="../index.html" class="back-button">← Back to Explorer</a>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-left">
+      <span>© 2026 Climate Drift and Alon Philosof</span>
+      <a href="mailto:info@climatesolutionsmap.earth">📧 Contact</a>
+      <a href="https://github.com/aphilosof/climate-solutions-explorer" target="_blank" rel="noopener noreferrer">
+        ⭐ GitHub
+      </a>
+      <a href="https://forms.gle/uNyqmvkd6XGxRq38A" target="_blank" rel="noopener noreferrer">💡 Suggest an entry</a>
+      <a href="PRIVACY.html">Privacy</a>
+    </div>
+  </footer>
+
+  <script defer src="markdown-loader.js"></script>
+</body>
+</html>
