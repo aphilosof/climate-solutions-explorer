@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://climatesolutionsmap.earth/sitemap.xml

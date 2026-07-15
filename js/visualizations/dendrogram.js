@@ -1,0 +1,854 @@
+/**
+ * dendrogram.js
+ * Enhanced Dendrogram (Tree) visualization with sunburst-style zoom and label handling
+ */
+
+import { showSidePanel, sanitizeText, sanitizeUrl } from '../utilities.js';
+import { getNodeColor, tagNodesWithCategory, buildPath, createTooltipLifecycle, attachTooltipPanelHandlers } from './shared.js';
+
+export function renderDendrogram(data, showTooltip, hideTooltip) {
+  const container = document.getElementById('visualization');
+  let width = container.clientWidth;
+  let height = container.clientHeight;
+
+  if (!width || !height) return;
+
+  d3.select('#visualization').selectAll('*').remove();
+
+  const svg = d3.select('#visualization')
+    .append('svg')
+    .attr('role', 'img')
+    .attr('aria-label', 'Branches: expandable tree of climate solution categories. Click nodes to expand or collapse.')
+    .attr('width', width)
+    .attr('height', height)
+    .style('display', 'block');
+
+  // Margins
+  const margin = { top: 20, right: 120, bottom: 20, left: 80 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // Category-specific color palette (depth-1 categories get unique colors)
+  
+
+  // Helper function to generate a hash from a string (for consistent random shades)
+  
+
+  // Helper function to get color for a node based on its category and depth
+  
+
+  // Tree layout - horizontal with dynamic spacing that scales with viewport
+  const tree = d3.tree()
+    .size([innerHeight * 0.9, innerWidth * 0.7])  // Use more of available space
+    .separation((a, b) => {
+      // Dynamic spacing based on viewport height - scales automatically
+      const viewportScale = Math.max(innerHeight / 600, 1); // Scale factor based on viewport
+      const baseSpacing = a.parent === b.parent ? 2.5 : 3.5; // Increased base spacing
+      const depthMultiplier = Math.max(a.depth, b.depth) * 0.8;  // More spacing at deeper levels
+      return (baseSpacing + depthMultiplier) * viewportScale;  // Scales with viewport
+    });
+
+  const root = d3.hierarchy(data);
+
+  // Tag each node with its category (depth-1 ancestor name) for color consistency
+  
+
+  tagNodesWithCategory(root);
+
+  // FIRST: Create cluster node for root's terminal leaves
+  if (root.children) {
+    const terminalLeaves = root.children.filter(child => !child.children || child.children.length === 0);
+    const depthOneCategories = root.children.filter(child => child.children && child.children.length > 0);
+
+    if (terminalLeaves.length > 0) {
+      // Create cluster node for terminal leaves
+      const clusterData = {
+        name: `Other Solutions (${terminalLeaves.length})`,
+        _isCluster: true
+      };
+      const clusterNode = d3.hierarchy(clusterData);
+      clusterNode._clusteredLeaves = terminalLeaves; // Store actual leaves
+      clusterNode.data._isCluster = true;
+
+      // CRITICAL: Set parent reference and depth for proper link creation
+      clusterNode.parent = root;
+      clusterNode.depth = 1;
+      clusterNode.height = 0;
+
+      // Replace root's children: depth-1 categories + cluster node
+      root.children = [...depthOneCategories, clusterNode];
+    }
+  }
+
+  // Initialize with only depth 1 visible (root + main categories + cluster)
+  root.descendants().forEach(d => {
+    d._descendantCount = d.descendants().length - 1; // Count for sizing
+    if (d.children) {
+      d._children = d.children; // Store for collapse/expand
+      // Collapse all children of depth-1 nodes (hide depth 2+)
+      if (d.depth >= 1 && !d.data._isCluster) {
+        d.children = null;
+      }
+    }
+  });
+
+  // Initialize starting positions for transitions
+  root.x0 = innerHeight / 2;
+  root.y0 = 0;
+
+  // State
+  let i = 0; // Unique node ID counter for D3 enter/exit
+  const tooltipLife = createTooltipLifecycle();
+  let wasDragging = false;
+
+  // Create link generator with null safety
+  const linkGenerator = d3.linkHorizontal()
+    .x(d => d ? d.y : 0)
+    .y(d => d ? d.x : 0);
+
+  // Helper function to recursively hide/show node and all descendants
+  function setHiddenRecursive(node, hidden) {
+    node._hiddenBySiblingSelection = hidden;
+    if (node.children) {
+      node.children.forEach(child => setHiddenRecursive(child, hidden));
+    }
+    if (node._children) {
+      node._children.forEach(child => setHiddenRecursive(child, hidden));
+    }
+  }
+
+  // Helper function to build breadcrumb path from root to node
+  
+
+  // Update breadcrumbs for dendrogram
+  function updateBreadcrumbsForDendrogram(node) {
+    if (!window.updateBreadcrumbs) return;
+
+    // If we're at root or no active path, hide breadcrumbs
+    if (!node || node === root) {
+      window.resetBreadcrumbs();
+      return;
+    }
+
+    // Build path from root to this node
+    const path = buildPath(node, root);
+    window.updateBreadcrumbs(path);
+  }
+
+  // Helper function to cluster terminal nodes for any parent (>5 terminals)
+  function clusterTerminalNodes(parentNode) {
+    if (!parentNode.children) return;
+
+    // Check both .children and ._children to identify categories (collapsed nodes have ._children)
+    const terminals = parentNode.children.filter(child =>
+      (!child.children || child.children.length === 0) && (!child._children || child._children.length === 0)
+    );
+    const categories = parentNode.children.filter(child =>
+      (child.children && child.children.length > 0) || (child._children && child._children.length > 0)
+    );
+
+    // Only cluster if more than 5 terminal nodes
+    if (terminals.length > 5) {
+      const clusterData = {
+        name: `Other Solutions (${terminals.length})`,
+        _isCluster: true,
+        _isTerminalCluster: true
+      };
+      const clusterNode = d3.hierarchy(clusterData);
+      clusterNode._clusteredLeaves = terminals;
+      clusterNode.data._isCluster = true;
+      clusterNode.parent = parentNode;
+      clusterNode.depth = parentNode.depth + 1;
+      clusterNode.height = 0;
+
+      // Replace children with categories + cluster
+      parentNode.children = [...categories, clusterNode];
+    }
+  }
+
+  // Initial render
+  update(root);
+
+  // Update function - proper D3 tree pattern with enter/exit/update
+  function update(source) {
+    // Recalculate tree layout
+    const treeData = tree(root);
+    let nodes = treeData.descendants();
+    let links = treeData.links();
+
+    // Filter out nodes hidden by sibling selection
+    nodes = nodes.filter(d => !d._hiddenBySiblingSelection);
+    links = links.filter(d => !d.source._hiddenBySiblingSelection && !d.target._hiddenBySiblingSelection);
+
+    // Calculate initial bounds to find maxX
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    nodes.forEach(d => {
+      if (!d.data._isCluster) { // Exclude cluster for initial bounds
+        minX = Math.min(minX, d.x);
+        maxX = Math.max(maxX, d.x);
+        minY = Math.min(minY, d.y);
+        maxY = Math.max(maxY, d.y);
+      }
+    });
+
+    // Position cluster node CLOSER to bottom category and near root
+    nodes.forEach(d => {
+      if (d.data._isCluster && d.depth === 1) {
+        // Move closer to bottom category (x is vertical in horizontal layout)
+        d.x = maxX + 18; // Closer to bottom node for shorter link
+        // Position VERY close to root horizontally (Y is horizontal in horizontal tree)
+        d.y = minY + 70; // Slightly closer to root
+      }
+    });
+
+    // Recalculate bounds including cluster
+    minX = Infinity;
+    maxX = -Infinity;
+    minY = Infinity;
+    maxY = -Infinity;
+    nodes.forEach(d => {
+      minX = Math.min(minX, d.x);
+      maxX = Math.max(maxX, d.x);
+      minY = Math.min(minY, d.y);
+      maxY = Math.max(maxY, d.y);
+    });
+
+    const treeWidth = maxY - minY;
+    const treeHeight = maxX - minX;
+
+    // Calculate scale to fit tree in viewport with padding (0.85 = 85% use of viewport)
+    const scaleX = treeWidth > 0 ? (innerWidth * 0.85) / treeWidth : 1;
+    const scaleY = treeHeight > 0 ? (innerHeight * 0.85) / treeHeight : 1;
+    const scale = Math.min(scaleX, scaleY, 1);
+
+    // SMART SIZING: Calculate overlap prevention factor
+    const depth1Nodes = nodes.filter(d => d.depth === 1 && !d.data._isCluster);
+    const avgSpacing = depth1Nodes.length > 1
+      ? (maxX - minX) / (depth1Nodes.length - 1)
+      : innerHeight;
+
+    // Calculate proportional sizes first, then check for overlap
+    // Smart scaling: sqrt keeps growth manageable as content increases
+    const calculateProportionalRadius = (d) => {
+      if (d.data._isCluster) {
+        const count = d._clusteredLeaves ? d._clusteredLeaves.length : 0;
+        return 15 + Math.sqrt(count) * 2.5; // Modest scaling for cluster
+      }
+      if (d.depth === 0) {
+        const count = d._descendantCount || 1;
+        return 40 + Math.sqrt(count) * 3; // Root: better scaling
+      }
+      if (d.depth === 1) {
+        const count = d._descendantCount || 1;
+        return 15 + Math.sqrt(count) * 4; // Main categories: bigger now, scales well
+      }
+      if (d._children) {
+        const count = d._descendantCount || 1;
+        return 8 + Math.sqrt(count) * 2.5;
+      }
+      return 4;
+    };
+
+    // Find max proportional radius for depth-1 nodes
+    const maxProportionalRadius = Math.max(
+      ...depth1Nodes.map(d => calculateProportionalRadius(d))
+    );
+
+    // Overlap prevention: balanced approach - big nodes but no overlap
+    // Max radius can be up to 75% of spacing (bigger nodes, still no overlap)
+    const maxAllowedRadius = avgSpacing * 0.75 * scale;
+    const overlapPrevention = Math.min(1.0, maxAllowedRadius / maxProportionalRadius);
+
+    // Calculate translation to center and fit tree in viewport
+    const scaledWidth = treeWidth * scale;
+    const scaledHeight = treeHeight * scale;
+
+    // Center the tree within available space and add margin
+    const translateX = margin.left - minY * scale + (innerWidth - scaledWidth) / 2;
+    const translateY = margin.top - minX * scale + (innerHeight - scaledHeight) / 2;
+
+    // Apply scale and translate to fit tree perfectly in viewport
+    g.attr('transform', `translate(${translateX},${translateY}) scale(${scale})`);
+
+    // **************** Nodes section ****************
+
+    // Update the nodes using a unique ID for enter/exit
+    const node = g.selectAll('g.node')
+      .data(nodes, d => d.id || (d.id = ++i));
+
+    // Enter any new nodes at the parent's previous position
+    const nodeEnter = node.enter().append('g')
+      .attr('class', 'node')
+      .attr('transform', d => `translate(${source.y0},${source.x0})`)
+      .style('cursor', d => {
+        const items = d.data?.urls || d.data?.content || d.data?.items || [];
+        return (d.children || d._children || items.length > 0) ? 'pointer' : 'default';
+      })
+      .on('mouseover', function(event, d) {
+        // Clear any frozen tooltip to allow new ones to show
+        tooltipLife.clearFrozen();
+
+        // Show hover box for ALL nodes (both circles and rectangles)
+        d3.select(this).select('circle')
+          .attr('stroke', '#000')
+          .attr('stroke-width', 2);
+        d3.select(this).select('rect')
+          .attr('stroke', '#000')
+          .attr('stroke-width', 2);
+
+        const tooltip = d3.select('#tooltip');
+        const name = sanitizeText(d.data.name || d.data.entity_name || '');
+        const items = d.data?.urls || d.data?.content || d.data?.items || [];
+
+        // Show tooltip CLOSE to cursor, slightly above (stays in place)
+        tooltip
+          .datum(d)
+          .style('display', 'block')
+          .style('visibility', 'visible')
+          .style('opacity', '1')
+          .style('pointer-events', 'none')  // Don't block clicks initially
+          .style('left', (event.pageX + 5) + 'px')
+          .style('top', (event.pageY - 35) + 'px');
+
+        // Special tooltip for cluster nodes
+        if (d.data._isCluster) {
+          const count = d._clusteredLeaves ? d._clusteredLeaves.length : 0;
+          tooltip.html(`
+            <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
+            <div style="font-size: 12px; color: #666;">
+              ${count} solution${count === 1 ? '' : 's'} - Click to view
+            </div>
+          `);
+        } else if (d.children || d._children) {
+          const numChildren = (d.children || d._children).length;
+          tooltip.html(`
+            <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
+            <div style="font-size: 12px; color: #666;">
+              ${numChildren} subcategor${numChildren === 1 ? 'y' : 'ies'} - Click to expand
+            </div>
+          `);
+        } else if (items.length > 0) {
+          tooltip.html(`
+            <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
+            <div style="font-size: 12px; color: #666;">
+              ${items.length} item${items.length === 1 ? '' : 's'} - Click to view
+            </div>
+          `);
+        } else {
+          tooltip.html(`
+            <div style="font-weight: bold; margin-bottom: 4px;">${name}</div>
+          `);
+        }
+
+        tooltipLife.freeze(d);  // clickable; touch devices get an auto-hide
+      })
+      .on('mouseout', function(event, d) {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+
+        // Remove stroke from circles
+        d3.select(this).select('circle')
+          .attr('stroke', d => {
+            if (isMatch) return '#cc0000';
+            if (d._children) return '#fff';
+            return 'none';
+          })
+          .attr('stroke-width', d => {
+            if (isMatch) return 2;
+            if (d._children) return 3;
+            return 0;
+          });
+
+        // Remove stroke from rectangles (cluster nodes)
+        d3.select(this).select('rect')
+          .attr('stroke', '#fff')
+          .attr('stroke-width', 2);
+
+        // Cursor left the node: hide the tooltip after a short grace period
+        // (kept alive if the cursor moves onto the tooltip itself)
+        tooltipLife.scheduleHide();
+      })
+      .on('click', function(event, d) {
+        if (wasDragging || event.metaKey || event.ctrlKey) {
+          event.stopPropagation();
+          return;
+        }
+
+        const sidePanel = document.getElementById('sidePanel');
+        const items = d.data?.urls || d.data?.content || d.data?.items || [];
+
+        // Handle cluster node - show all URLs in side panel
+        if (d.data._isCluster && d._clusteredLeaves) {
+          // Collect all URLs from all clustered leaves
+          const allUrls = [];
+          d._clusteredLeaves.forEach(leaf => {
+            const leafItems = leaf.data?.urls || leaf.data?.content || leaf.data?.items || [];
+            allUrls.push(...leafItems);
+          });
+
+          // Create a synthetic node with all URLs for side panel display
+          const syntheticNode = {
+            data: {
+              name: d.data.name,
+              urls: allUrls
+            }
+          };
+
+          showSidePanel(sidePanel, syntheticNode);
+        } else if (d.children || d._children) {
+          // Click on node with children - expand and hide siblings
+          // First ensure children are visible
+          if (d._children) {
+            d.children = d._children;
+            d._children = null;
+          }
+
+          // Cluster terminal nodes if needed (>5 terminals)
+          clusterTerminalNodes(d);
+
+          // Ensure only immediate children are visible (collapse grandchildren)
+          if (d.children) {
+            d.children.forEach(child => {
+              if (child.children) {
+                child._children = child.children;
+                child.children = null;
+              }
+            });
+          }
+
+          // Hide siblings and handle ancestor visibility based on depth
+          if (d.depth === 1) {
+            // Depth-1 click: Hide root and siblings (zoom to this branch)
+            root._hiddenBySiblingSelection = true; // Hide root only
+            setHiddenRecursive(d, false); // Show clicked node and its children
+            if (d.parent && d.parent.children) {
+              d.parent.children.forEach(sibling => {
+                if (sibling !== d) {
+                  setHiddenRecursive(sibling, true); // Hide sibling and all descendants
+                }
+              });
+            }
+          } else {
+            // Deeper levels: Hide siblings only, keep ancestors visible
+            if (d.parent && d.parent.children) {
+              d.parent.children.forEach(sibling => {
+                if (sibling !== d) {
+                  setHiddenRecursive(sibling, true); // Hide sibling and all descendants
+                } else {
+                  setHiddenRecursive(sibling, false); // Show clicked node and its children
+                }
+              });
+            }
+          }
+
+          // Update breadcrumbs to show path to expanded node
+          updateBreadcrumbsForDendrogram(d);
+
+          update(d);
+        } else if (items && items.length > 0) {
+          // Terminal leaf with content - open side panel
+          showSidePanel(sidePanel, d);
+        } else if (d.data.url) {
+          // Single URL - open it
+          const safeUrl = sanitizeUrl(d.data.url);
+          if (safeUrl && safeUrl !== '#') window.open(safeUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        event.stopPropagation();
+      });
+
+    // Add shapes to entering nodes (squares for terminals/clusters, circles for others)
+    nodeEnter.each(function(d) {
+      const isTerminal = !d.children && !d._children;
+      if (d.data._isCluster || isTerminal) {
+        // Terminal nodes and cluster nodes: add SQUARE (rect)
+        d3.select(this).append('rect')
+          .attr('width', 1e-6)
+          .attr('height', 1e-6)
+          .attr('x', 0)
+          .attr('y', 0)
+          .style('fill', getNodeColor(d));
+      } else {
+        // Category nodes: add circles
+        d3.select(this).append('circle')
+          .attr('r', 1e-6)
+          .style('fill', getNodeColor(d));
+      }
+    });
+
+    // Calculate responsive font sizes based on viewport
+    const baseFontSize = Math.max(12, Math.min(innerWidth / 60, 18)); // Scale between 12px and 18px
+
+    // Add labels to entering nodes (including terminals)
+    nodeEnter.append('text')
+      .attr('dy', '.35em')
+      .attr('x', d => (d.children || d._children) ? -10 : 10)
+      .attr('text-anchor', d => (d.children || d._children) ? 'end' : 'start')
+      .style('fill-opacity', 1e-6) // Start invisible for transition
+      .style('font-size', d => {
+        // Terminal nodes and clusters get smaller font
+        const isTerminal = !d.children && !d._children;
+        if (isTerminal || d.data._isCluster) return `${baseFontSize * 0.75}px`;
+
+        if (d.depth === 1) return `${baseFontSize * 1.2}px`; // Larger for depth-1
+        if (d.depth === 2) return `${baseFontSize}px`;
+        return `${baseFontSize * 0.9}px`;
+      })
+      .style('fill', 'white')
+      .style('font-weight', d => d.depth === 1 ? '700' : 'normal')
+      .style('pointer-events', 'none')
+      .style('display', 'block'); // Show all labels including terminals
+
+    // UPDATE existing nodes
+    const nodeUpdate = nodeEnter.merge(node);
+
+    // Transition to the proper position
+    nodeUpdate.transition()
+      .duration(750)
+      .attr('transform', d => `translate(${d.y},${d.x})`);
+
+    // Update circles (regular nodes) with PROPORTIONAL sizing + overlap prevention
+    nodeUpdate.select('circle')
+      .transition()
+      .duration(750)
+      .attr('r', d => {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return 6;
+        const proportionalSize = calculateProportionalRadius(d);
+        return proportionalSize * overlapPrevention;
+      })
+      .attr('fill', d => {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#ff4444';
+        // Use category-based colors for all nodes
+        return getNodeColor(d);
+      })
+      .attr('fill-opacity', d => {
+        if (d.data._isCluster) {
+          // Very transparent for cluster - should look like ghost
+          return 0.35;
+        }
+        if (!d.children && !d._children) {
+          return 0.6; // Terminal nodes
+        }
+        return 0.5; // Category nodes with children
+      })
+      .attr('stroke', d => {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#cc0000';
+        if (d._children) return '#fff';
+        return 'none';
+      })
+      .attr('stroke-width', d => {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return 2;
+        if (d._children) return 3;
+        return 0;
+      });
+
+    // Update rectangles (terminal nodes and clusters) - SQUARE shape
+    nodeUpdate.select('rect')
+      .transition()
+      .duration(750)
+      .attr('width', d => {
+        const proportionalSize = calculateProportionalRadius(d);
+        return proportionalSize * overlapPrevention * 2;
+      })
+      .attr('height', d => {
+        const proportionalSize = calculateProportionalRadius(d);
+        return proportionalSize * overlapPrevention * 2;
+      })
+      .attr('x', d => {
+        const proportionalSize = calculateProportionalRadius(d);
+        return -proportionalSize * overlapPrevention; // Center the square
+      })
+      .attr('y', d => {
+        const proportionalSize = calculateProportionalRadius(d);
+        return -proportionalSize * overlapPrevention; // Center the square
+      })
+      .attr('fill', d => {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#ff4444';
+        // Use category-based colors for all nodes
+        return getNodeColor(d);
+      })
+      .attr('fill-opacity', d => {
+        if (d.data._isCluster) {
+          // Very transparent for cluster - should look like ghost
+          return 0.35;
+        }
+        if (!d.children && !d._children) {
+          return 0.6; // Terminal nodes
+        }
+        return 0.5; // Category nodes with children
+      })
+      .attr('stroke', d => {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return '#cc0000';
+        return '#fff';
+      })
+      .attr('stroke-width', d => {
+        // Check if node matches any filter
+        const isMatch = d.data.isSearchMatch || d.data.isTypeMatch || d.data.isTagMatch ||
+                        d.data.isAuthorMatch || d.data.isLocationMatch || d.data.isDateMatch;
+        if (isMatch) return 3;
+        return 1;
+      });
+
+    // Update the label text and positioning
+    nodeUpdate.select('text')
+      .transition()
+      .duration(750)
+      .attr('x', d => (d.children || d._children) ? -10 : 10)
+      .attr('text-anchor', d => (d.children || d._children) ? 'end' : 'start')
+      .style('font-size', d => {
+        // Terminal nodes and clusters get smaller font
+        const isTerminal = !d.children && !d._children;
+        if (isTerminal || d.data._isCluster) return `${baseFontSize * 0.75}px`;
+
+        if (d.depth === 1) return `${baseFontSize * 1.2}px`; // Larger for depth-1
+        if (d.depth === 2) return `${baseFontSize}px`;
+        return `${baseFontSize * 0.9}px`;
+      })
+      .text(d => {
+        const name = sanitizeText(d.data.name || d.data.entity_name || '');
+
+        // For cluster nodes, name already includes count (e.g., "Other Solutions (15)")
+        if (d.data._isCluster) {
+          return name;
+        }
+
+        // For terminal nodes (squares), add entry count
+        const isTerminalLeaf = !d.children && !d._children;
+        if (isTerminalLeaf) {
+          const items = d.data?.urls || d.data?.content || d.data?.items || [];
+          if (items.length > 0) {
+            return `${name} (${items.length})`;
+          }
+          return name;
+        }
+
+        // For category nodes (circles), show truncated name
+        if (d.depth === 1) {
+          const maxChars = 22;
+          if (name.length > maxChars) {
+            return name.substring(0, maxChars - 1) + '…';
+          }
+          return name;
+        }
+
+        // For other nodes (depth 2+ with children), show truncated name
+        const maxChars = 22;
+        if (name.length > maxChars) {
+          return name.substring(0, maxChars - 1) + '…';
+        }
+        return name;
+      })
+      .style('fill-opacity', 1) // All labels visible
+      .style('display', 'block'); // All labels visible
+
+    // EXIT - Remove any exiting nodes (instant, no fade)
+    node.exit()
+      .attr('transform', d => `translate(${source.y},${source.x})`)
+      .remove();
+
+    // No fade animation for exit (instant removal handled above)
+
+    // **************** Links section ****************
+
+    const link = g.selectAll('path.link')
+      .data(links, d => d.target.id);
+
+    // Enter any new links at the parent's previous position
+    const linkEnter = link.enter().insert('path', 'g')
+      .attr('class', 'link')
+      .style('stroke', 'rgba(144, 224, 239, 0.7)')
+      .style('stroke-width', '3px')
+      .style('fill', 'none')
+      .attr('d', d => {
+        const o = {x: source.x0, y: source.y0};
+        return linkGenerator({source: o, target: o});
+      });
+
+    // UPDATE existing links
+    const linkUpdate = linkEnter.merge(link);
+
+    // Ensure all links have proper styling (including cluster link)
+    linkUpdate
+      .style('stroke', 'rgba(144, 224, 239, 0.7)')
+      .style('stroke-width', '3px')
+      .style('fill', 'none');
+
+    // Transition back to the parent element position
+    linkUpdate.transition()
+      .duration(750)
+      .attr('d', d => {
+        // Safety check - ensure source and target exist
+        if (!d.source || !d.target) {
+          return '';
+        }
+
+        // Use standard horizontal link for all nodes (including clusters)
+        return linkGenerator(d);
+      });
+
+    // Remove any exiting links (instant, no animation)
+    link.exit().remove();
+
+    // Store the old positions for transition
+    nodes.forEach(d => {
+      d.x0 = d.x;
+      d.y0 = d.y;
+    });
+  }
+
+
+  // Setup tooltip click handler to open side panel
+  const tooltip = d3.select('#tooltip');
+  const sidePanel = document.getElementById('sidePanel');
+
+  attachTooltipPanelHandlers(tooltipLife);
+
+  // Listen for breadcrumb navigation events
+  const breadcrumbHandler = (e) => {
+    const targetNode = e.detail.node;
+    if (targetNode) {
+      // Find the node in the tree
+      let found = null;
+      root.descendants().forEach(d => {
+        if (d === targetNode) {
+          found = d;
+        }
+      });
+
+      if (found) {
+        // Expand path to this node
+        let current = found.parent;
+        while (current) {
+          if (current._children) {
+            current.children = current._children;
+            current._children = null;
+          }
+          current = current.parent;
+        }
+
+        // Hide siblings along the path
+        current = found;
+        while (current && current.parent) {
+          if (current.parent.children) {
+            current.parent.children.forEach(sibling => {
+              if (sibling !== current) {
+                setHiddenRecursive(sibling, true);
+              } else {
+                setHiddenRecursive(sibling, false);
+              }
+            });
+          }
+          current = current.parent;
+        }
+
+        // Update breadcrumbs and render
+        updateBreadcrumbsForDendrogram(found);
+        update(found);
+      }
+    }
+  };
+
+  // Listen for reset event from global home button
+  const resetHandler = () => {
+    // Reset to root and restore initial collapsed state (show only 3 main categories)
+    root.descendants().forEach(d => {
+      // Clear sibling selection flags
+      d._hiddenBySiblingSelection = false;
+
+      if (d.depth >= 1) {
+        // Re-collapse depth 1+ nodes to show only main categories
+        if (d._children || d.children) {
+          d._children = d._children || d.children;
+          d.children = null;
+        }
+      }
+    });
+    // Reset breadcrumbs
+    updateBreadcrumbsForDendrogram(null);
+    // Reset view to root
+    update(root);
+  };
+
+  // Listen for up event from global up button
+  // For dendrogram, collapse all expanded nodes (similar to reset)
+  const upHandler = () => {
+    // Collapse all nodes back to initial state
+    root.descendants().forEach(d => {
+      d._hiddenBySiblingSelection = false;
+      if (d.depth >= 1) {
+        if (d._children || d.children) {
+          d._children = d._children || d.children;
+          d.children = null;
+        }
+      }
+    });
+    // Reset breadcrumbs
+    updateBreadcrumbsForDendrogram(null);
+    update(root);
+  };
+
+  // Add event listeners
+  window.addEventListener('breadcrumbNavigate', breadcrumbHandler);
+  window.addEventListener('resetVisualization', resetHandler);
+  window.addEventListener('goUpLevel', upHandler);
+
+  // Cleanup function (called when visualization changes)
+  const cleanup = () => {
+    window.removeEventListener('breadcrumbNavigate', breadcrumbHandler);
+    window.removeEventListener('resetVisualization', resetHandler);
+    window.removeEventListener('goUpLevel', upHandler);
+    window.removeEventListener('resize', resizeHandler);
+    tooltipLife.cleanup();
+    if (resizeTimer) clearTimeout(resizeTimer);
+  };
+
+  // Store cleanup function for next render
+  if (window._dendrogramCleanup) {
+    window._dendrogramCleanup();
+  }
+  window._dendrogramCleanup = cleanup;
+
+  // Handle window resize
+  let resizeTimer;
+  const resizeHandler = () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      width = container.clientWidth;
+      height = container.clientHeight;
+
+      if (!width || !height) return;
+
+      svg.attr('width', width).attr('height', height);
+
+      const newInnerWidth = width - margin.left - margin.right;
+      const newInnerHeight = height - margin.top - margin.bottom;
+      tree.size([newInnerHeight, newInnerWidth]);
+
+      update(root);
+    }, 150);
+  };
+  window.addEventListener('resize', resizeHandler);
+}
