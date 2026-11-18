@@ -1,0 +1,100 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Climate Solutions Explorer
+message: >-
+  If you use this software or data, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Alon
+    family-names: Philosof
+    email: aphilosof@gmail.com
+    affiliation: Climate Drift
+  - name: Climate Drift
+    website: 'https://climatedrift.com'
+repository-code: 'https://github.com/aphilosof/climate-solutions-explorer'
+url: 'https://climatesolutionsmap.earth'
+abstract: >-
+  An interactive platform for exploring climate solutions data
+  through five D3.js views (circle packing, dendrogram, treemap,
+  sunburst, and a sortable list) with advanced search capabilities
+  powered by MiniSearch with boolean operators (AND, OR, NOT) and
+  full-text search across all content. The database includes 320+
+  curated climate solutions across 12 sectors: Power, Protect
+  Nature, Transportation, Water, Food and Agriculture, Circular
+  Economy, Industry, Fuels & Chemicals, Buildings, Climate
+  Intelligence, Finance, and Carbon Removal.
+keywords:
+  - climate change
+  - climate solutions
+  - data visualization
+  - climate tech
+  - sustainability
+  - open data
+  - climate action
+  - carbon removal
+  - renewable energy
+  - climate database
+license: MIT
+version: 1.0.15
+date-released: '2026-08-10'
+references:
+  - type: data
+    title: Climate Solutions Database
+    authors:
+      - given-names: Alon
+        family-names: Philosof
+        affiliation: Climate Drift
+      - name: Climate Drift
+        website: 'https://climatedrift.com'
+    abstract: >-
+      A curated database of 320+ climate solutions spanning 12
+      sectors. Includes companies, research articles, technologies,
+      tools, projects, and datasets focused on climate change
+      mitigation and adaptation. All entries are Technology
+      Readiness Level (TRL) 3+ and actively being developed.
+    license: CC-BY-4.0
+    repository-code: 'https://github.com/aphilosof/climate-solutions-explorer'
+    url: 'https://climatesolutionsmap.earth'
+    keywords:
+      - climate solutions
+      - climate data
+      - climate tech
+      - open data
+      - climate action
+      - sustainability database
+    version: 1.0.15
+    date-released: '2026-08-10'
+
+# Citation Examples:
+#
+# Software Citation (APA):
+# Philosof, A., & Climate Drift. (2026). Climate Solutions Explorer
+# (Version 1.0.15) [Computer software]. https://github.com/aphilosof/climate-solutions-explorer
+#
+# Data Citation (APA):
+# Philosof, A., & Climate Drift. (2026). Climate Solutions Database
+# (Version 1.0.15) [Data set]. Licensed under CC BY 4.0.
+# https://climatesolutionsmap.earth
+#
+# Software Citation (BibTeX):
+# @software{Philosof_Climate_Solutions_Explorer_2026,
+#   author = {Philosof, Alon and {Climate Drift}},
+#   license = {MIT},
+#   title = {{Climate Solutions Explorer}},
+#   url = {https://github.com/aphilosof/climate-solutions-explorer},
+#   version = {1.0.15},
+#   year = {2026}
+# }
+#
+# Data Citation (BibTeX):
+# @dataset{Philosof_Climate_Solutions_Database_2026,
+#   author = {Philosof, Alon and {Climate Drift}},
+#   license = {CC-BY-4.0},
+#   title = {{Climate Solutions Database}},
+#   url = {https://climatesolutionsmap.earth},
+#   version = {1.0.15},
+#   year = {2026}
+# }

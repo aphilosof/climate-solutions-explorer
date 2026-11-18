@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Content Security Policy for XSS Protection -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net https://climatesolutionsmap.goatcounter.com; base-uri 'self'; form-action 'self';">
+  <title>Climate Solutions Map</title>
+  <meta name="description" content="An interactive version of the original Climate Drift solutions map. Zoom in to any category and click through to its listings in the Climate Solutions Explorer.">
+  <meta property="og:title" content="Climate Solutions Map">
+  <meta property="og:description" content="An interactive version of the original Climate Drift solutions map. Zoom in to any category and click through to its listings in the Climate Solutions Explorer.">
+  <meta property="og:image" content="https://climatesolutionsmap.earth/og-image.jpg">
+  <meta property="og:image:width" content="1184">
+  <meta property="og:image:height" content="1263">
+  <meta property="og:url" content="https://climatesolutionsmap.earth/map/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Climate Solutions Map">
+  <meta name="twitter:description" content="An interactive version of the original Climate Drift solutions map. Zoom in to any category and click through to its listings in the Climate Solutions Explorer.">
+  <meta name="twitter:image" content="https://climatesolutionsmap.earth/og-image.jpg">
+  <link rel="icon" type="image/png" href="/cd_logo_crop_green.png">
+  <link rel="canonical" href="https://climatesolutionsmap.earth/map/">
+  <link rel="stylesheet" href="/styles.css?v=20261117">
+  <!-- CDN Scripts with Subresource Integrity (SRI) for security -->
+  <script defer src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"
+          integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
+          crossorigin="anonymous"></script>
+  <!-- DOMPurify - XSS Prevention -->
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+          integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+          crossorigin="anonymous"></script>
+  <!-- GoatCounter analytics (cookieless, self-hosted script, skips localhost) -->
+  <script data-goatcounter="https://climatesolutionsmap.goatcounter.com/count"
+          async src="/js/vendor/count.js"></script>
+</head>
+<body data-page="map">
+
+  <!-- Header -->
+  <header class="header">
+    <h1 class="site-title">
+      <a href="https://climatedrift.substack.com/" class="logo-link">
+        <img src="/cd_logo_crop_green.png" alt="Climate Drift logo" class="site-logo">
+      </a>
+      <a href="/" class="site-title-link">Climate Solutions Map</a>
+  </h1>
+    <nav class="page-switch" aria-label="Site sections">
+      <a href="/map/" aria-current="page">Climate Solutions Map</a>
+      <a href="/explorer/">Climate Solutions Explorer</a>
+    </nav>
+    <p class="site-description" id="siteDescription">
+      An interactive version of the original Climate Drift solutions map. Scroll or pinch to zoom, drag to move around, and click any category for details.
+      <a href="/docs/FAQ.html" style="color: #59b68b; text-decoration: none; border-bottom: 1px solid rgba(64, 145, 108, 0.5);">Learn more in the FAQ</a>.
+    </p>
+  </header>
+
+  <!-- Map -->
+  <div class="viz-area">
+    <div id="visualization">
+      <div class="loading">
+        <div class="loading-icon">🌍</div>
+        <div class="loading-text">Loading the map</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zoom controls -->
+  <div class="map-controls" role="group" aria-label="Map zoom controls">
+    <button class="map-control" id="mapZoomIn" aria-label="Zoom in" title="Zoom in (+)">+</button>
+    <button class="map-control" id="mapZoomOut" aria-label="Zoom out" title="Zoom out (−)">−</button>
+    <button class="map-control" id="mapReset" aria-label="Fit the whole map" title="Fit the whole map (0)">⌂</button>
+  </div>
+  <div class="map-hint" id="mapHint" hidden>Tap a branch to zoom in</div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-left">
+      <span>© 2026 Alon Philosof</span>
+      <a href="mailto:info@climatesolutionsmap.earth">📧 Contact</a>
+      <a href="https://github.com/aphilosof/climate-solutions-explorer" target="_blank" rel="noopener noreferrer">
+        ⭐ GitHub
+      </a>
+      <a href="https://forms.gle/uNyqmvkd6XGxRq38A" target="_blank" rel="noopener noreferrer">💡 Suggest an entry</a>
+      <a href="/docs/PRIVACY.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+    </div>
+  </footer>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip">
+    <div class="tooltip-name"></div>
+    <div class="tooltip-details"></div>
+  </div>
+
+  <!-- UI Enhancement Script -->
+  <script src="/js/ui.js?v=20261015"></script>
+
+  <!-- Map Script -->
+  <script type="module" src="/js/map.js?v=20261015"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Content Security Policy for XSS Protection -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net https://climatesolutionsmap.goatcounter.com; base-uri 'self'; form-action 'self';">
+  <!-- Old Explorer links (/#viz=...) go on to /explorer/ before anything paints -->
+  <script src="/js/landing.js?v=20261015"></script>
+  <title>Climate Solutions Explorer</title>
+  <meta name="description" content="An interactive, curated database of climate solutions across 12 sectors. Now with the Climate Solutions Map, an interactive version of the original solutions map.">
+  <meta property="og:title" content="Climate Solutions Explorer">
+  <meta property="og:description" content="An interactive, curated database of climate solutions across 12 sectors. Now with the Climate Solutions Map, an interactive version of the original solutions map.">
+  <meta property="og:image" content="https://climatesolutionsmap.earth/og-image.jpg">
+  <meta property="og:image:width" content="1184">
+  <meta property="og:image:height" content="1263">
+  <meta property="og:url" content="https://climatesolutionsmap.earth/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Climate Solutions Explorer">
+  <meta name="twitter:description" content="An interactive, curated database of climate solutions across 12 sectors. Now with the Climate Solutions Map, an interactive version of the original solutions map.">
+  <meta name="twitter:image" content="https://climatesolutionsmap.earth/og-image.jpg">
+  <link rel="icon" type="image/png" href="/cd_logo_crop_green.png">
+  <link rel="canonical" href="https://climatesolutionsmap.earth/">
+  <link rel="stylesheet" href="/styles.css?v=20261117">
+  <!-- GoatCounter analytics (cookieless, self-hosted script, skips localhost) -->
+  <script data-goatcounter="https://climatesolutionsmap.goatcounter.com/count"
+          async src="/js/vendor/count.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Climate Solutions Explorer",
+    "url": "https://climatesolutionsmap.earth/",
+    "description": "An interactive, curated database of climate solutions across 12 sectors. Now with the Climate Solutions Map, an interactive version of the original solutions map.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Climate Drift",
+      "url": "https://climatedrift.substack.com"
+    },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://climatesolutionsmap.earth/explorer/#search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+</head>
+<body data-page="landing">
+
+  <!-- Header -->
+  <header class="header">
+    <h1 class="site-title">
+      <a href="https://climatedrift.substack.com/" class="logo-link">
+        <img src="/cd_logo_crop_green.png" alt="Climate Drift logo" class="site-logo">
+      </a>
+      Climate Solutions Explorer
+    </h1>
+    <p class="site-description">
+      An interactive, curated database of 320+ climate solutions across 12 sectors.
+      <a href="/docs/FAQ.html" style="color: #59b68b; text-decoration: none; border-bottom: 1px solid rgba(64, 145, 108, 0.5);">Learn more in the FAQ</a>.
+    </p>
+  </header>
+
+  <!-- The two pages -->
+  <main class="landing-cards">
+    <a class="landing-card" href="/map/">
+      <img class="landing-card-img" src="/img/landing-map.jpg" alt="The Climate Solutions Map, zoomed out: twelve branches fanning out from the center" width="1200" height="750">
+      <span class="landing-card-body">
+        <span class="landing-card-title">Climate Solutions Map</span>
+        <span class="landing-card-text">An interactive version of the original Climate Drift solutions map. Zoom in to any category and click through to its listings in the Climate Solutions Explorer.</span>
+        <span class="landing-card-button">Open the Map</span>
+      </span>
+    </a>
+    <a class="landing-card" href="/explorer/">
+      <img class="landing-card-img" src="/img/landing-explorer.jpg" alt="The Climate Solutions Explorer: the sunburst view of all sectors" width="1200" height="750">
+      <span class="landing-card-body">
+        <span class="landing-card-title">Climate Solutions Explorer</span>
+        <span class="landing-card-text">The full database of solutions and the people working on them. Navigate through five visualizations and full-text search. Everything in the Explorer is curated by experts.</span>
+        <span class="landing-card-button">Open the Explorer</span>
+      </span>
+    </a>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-left">
+      <span>© 2026 Alon Philosof</span>
+      <a href="mailto:info@climatesolutionsmap.earth">📧 Contact</a>
+      <a href="https://github.com/aphilosof/climate-solutions-explorer" target="_blank" rel="noopener noreferrer">
+        ⭐ GitHub
+      </a>
+      <a href="https://forms.gle/uNyqmvkd6XGxRq38A" target="_blank" rel="noopener noreferrer">💡 Suggest an entry</a>
+      <a href="/docs/PRIVACY.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+    </div>
+  </footer>
+</body>
+</html>
